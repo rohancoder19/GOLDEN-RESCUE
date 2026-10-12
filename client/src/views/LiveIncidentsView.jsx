@@ -14,6 +14,8 @@ import {
 
 export default function LiveIncidentsView({
   incidents = [],
+  showOriginalOnly = true,
+  toggleShowOriginalOnly,
   onSelectIncident,
   onOpenNewIncident,
 }) {
@@ -21,7 +23,13 @@ export default function LiveIncidentsView({
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredIncidents = incidents.filter((inc) => {
+  // Strict deduplication of incidents by incidentId
+  const uniqueIncidents = Array.from(
+    new Map(incidents.map((i) => [i.incidentId, i])).values()
+  );
+
+  const filteredIncidents = uniqueIncidents.filter((inc) => {
+    if (showOriginalOnly && (inc.isSimulated === true || inc.dataSource === 'SIMULATED_DEMO')) return false;
     if (severityFilter !== 'ALL' && inc.severity !== severityFilter) return false;
     if (statusFilter !== 'ALL' && inc.status !== statusFilter) return false;
     if (searchTerm.trim() !== '') {
@@ -37,7 +45,7 @@ export default function LiveIncidentsView({
   });
 
   return (
-    <div className="workspace-container">
+    <div className="workspace-container" style={{ background: '#000000' }}>
       {/* Header and Controls */}
       <div
         className="glass-panel"
@@ -48,21 +56,44 @@ export default function LiveIncidentsView({
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '14px',
+          background: '#000000',
+          border: '1px solid #2C3480',
         }}
       >
         <div>
-          <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>
-            LIVE INCIDENT DISPATCH QUEUE
+          <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff' }}>
+            ORIGINAL LIVE INCIDENT DISPATCH QUEUE
           </h1>
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-            Real-time emergency incident triage, validation, and multi-agency coordination
+          <p style={{ fontSize: '12px', color: '#94a3b8' }}>
+            Deduplicated emergency records verified against MongoDB Atlas (Showing {filteredIncidents.length} original cases)
           </p>
         </div>
 
-        <button className="btn-dispatch" onClick={onOpenNewIncident}>
-          <PlusCircle size={16} />
-          <span>Report New Incident</span>
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {toggleShowOriginalOnly && (
+            <button
+              className="btn-outline"
+              onClick={toggleShowOriginalOnly}
+              style={{
+                background: showOriginalOnly ? '#2C3480' : 'transparent',
+                borderColor: showOriginalOnly ? '#ffffff' : 'rgba(44, 52, 128, 0.6)',
+                color: '#ffffff',
+              }}
+            >
+              <ShieldCheck size={14} color="#ffffff" />
+              <span>{showOriginalOnly ? 'Original Data Verified' : 'Show All Data'}</span>
+            </button>
+          )}
+
+          <button
+            className="btn-dispatch"
+            onClick={onOpenNewIncident}
+            style={{ background: '#2C3480', border: '1px solid #ffffff', color: '#ffffff' }}
+          >
+            <PlusCircle size={16} color="#ffffff" />
+            <span>Report New Incident</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
@@ -74,26 +105,34 @@ export default function LiveIncidentsView({
           flexWrap: 'wrap',
           alignItems: 'center',
           gap: '12px',
+          background: '#000000',
+          border: '1px solid rgba(44, 52, 128, 0.4)',
         }}
       >
         <div style={{ position: 'relative', flex: 1, minWidth: '240px' }}>
-          <Search size={15} className="search-icon" />
+          <Search size={15} className="search-icon" color="#ffffff" />
           <input
             type="text"
             className="search-input"
             placeholder="Search by ID, title, street, or condition..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
           />
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>SEVERITY:</span>
+          <span style={{ fontSize: '11px', color: '#d1d5db', fontWeight: 700 }}>SEVERITY:</span>
           {['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((sev) => (
             <button
               key={sev}
               className={`filter-chip ${severityFilter === sev ? 'active' : ''}`}
               onClick={() => setSeverityFilter(sev)}
+              style={
+                severityFilter === sev
+                  ? { background: '#2C3480', color: '#ffffff', borderColor: '#ffffff', fontWeight: 800 }
+                  : { background: 'rgba(44, 52, 128, 0.15)', color: '#cbd5e1' }
+              }
             >
               {sev}
             </button>
@@ -101,12 +140,17 @@ export default function LiveIncidentsView({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>STATUS:</span>
+          <span style={{ fontSize: '11px', color: '#d1d5db', fontWeight: 700 }}>STATUS:</span>
           {['ALL', 'REPORTED', 'DISPATCHED', 'EN_ROUTE', 'ON_SCENE', 'RESOLVED'].map((st) => (
             <button
               key={st}
               className={`filter-chip ${statusFilter === st ? 'active' : ''}`}
               onClick={() => setStatusFilter(st)}
+              style={
+                statusFilter === st
+                  ? { background: '#2C3480', color: '#ffffff', borderColor: '#ffffff', fontWeight: 800 }
+                  : { background: 'rgba(44, 52, 128, 0.15)', color: '#cbd5e1' }
+              }
             >
               {st}
             </button>
@@ -114,17 +158,18 @@ export default function LiveIncidentsView({
         </div>
       </div>
 
-      {/* Incidents Table / Grid */}
-      <div className="glass-panel" style={{ overflow: 'hidden' }}>
+      {/* Incidents Table */}
+      <div className="glass-panel" style={{ overflow: 'hidden', background: '#000000', border: '1px solid #2C3480' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
           <thead>
             <tr
               style={{
-                borderBottom: '1px solid var(--border-subtle)',
-                background: 'rgba(10, 18, 32, 0.6)',
-                color: 'var(--text-muted)',
+                borderBottom: '1px solid rgba(44, 52, 128, 0.6)',
+                background: '#2C3480',
+                color: '#ffffff',
                 fontFamily: 'var(--font-mono)',
                 fontSize: '11px',
+                fontWeight: 800,
               }}
             >
               <th style={{ padding: '12px 16px' }}>INCIDENT ID</th>
@@ -140,8 +185,8 @@ export default function LiveIncidentsView({
           <tbody>
             {filteredIncidents.length === 0 ? (
               <tr>
-                <td colSpan="8" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  No emergency incidents matching criteria.
+                <td colSpan="8" style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
+                  No original emergency incidents matching criteria.
                 </td>
               </tr>
             ) : (
@@ -149,14 +194,14 @@ export default function LiveIncidentsView({
                 <tr
                   key={inc.incidentId}
                   style={{
-                    borderBottom: '1px solid var(--border-subtle)',
+                    borderBottom: '1px solid rgba(44, 52, 128, 0.25)',
                     cursor: 'pointer',
                     transition: 'background 0.15s ease',
                   }}
                   className="incident-table-row"
                   onClick={() => onSelectIncident(inc)}
                 >
-                  <td style={{ padding: '12px 16px', fontFamily: 'var(--font-mono)', color: 'var(--cyan-telemetry)', fontWeight: 600 }}>
+                  <td style={{ padding: '12px 16px', fontFamily: 'var(--font-mono)', color: '#ffffff', fontWeight: 800 }}>
                     {inc.incidentId}
                   </td>
                   <td style={{ padding: '12px 16px' }}>
@@ -165,38 +210,40 @@ export default function LiveIncidentsView({
                     </span>
                   </td>
                   <td style={{ padding: '12px 16px' }}>
-                    <div style={{ fontWeight: 600, color: '#fff' }}>{inc.title}</div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{inc.category}</div>
+                    <div style={{ fontWeight: 700, color: '#ffffff' }}>{inc.title}</div>
+                    <div style={{ fontSize: '10px', color: '#94a3b8' }}>{inc.category}</div>
                   </td>
-                  <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>
+                  <td style={{ padding: '12px 16px', color: '#cbd5e1' }}>
                     {inc.location?.address}
                   </td>
                   <td style={{ padding: '12px 16px' }}>
-                    <span className="status-badge">{inc.status}</span>
+                    <span className="status-badge" style={{ background: '#2C3480', color: '#ffffff', borderColor: '#ffffff' }}>
+                      {inc.status}
+                    </span>
                   </td>
                   <td style={{ padding: '12px 16px' }}>
                     {inc.assignedAmbulanceCallsign ? (
-                      <span style={{ color: '#10b981', fontWeight: 600 }}>
+                      <span style={{ color: '#ffffff', fontWeight: 700, background: '#2C3480', padding: '2px 8px', borderRadius: '4px' }}>
                         🚑 {inc.assignedAmbulanceCallsign}
                       </span>
                     ) : (
-                      <span style={{ color: '#ef4444', fontStyle: 'italic' }}>Unassigned</span>
+                      <span style={{ color: '#ef4444', fontStyle: 'italic', fontWeight: 600 }}>Unassigned</span>
                     )}
                   </td>
-                  <td style={{ padding: '12px 16px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                  <td style={{ padding: '12px 16px', color: '#94a3b8', fontFamily: 'var(--font-mono)' }}>
                     {new Date(inc.timestamps?.reportedAt || inc.createdAt).toLocaleTimeString()}
                   </td>
                   <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                     <button
                       className="btn-outline"
-                      style={{ padding: '4px 10px', fontSize: '11px' }}
+                      style={{ padding: '4px 12px', fontSize: '11px', background: '#2C3480', borderColor: '#ffffff', color: '#ffffff' }}
                       onClick={(e) => {
                         e.stopPropagation();
                         onSelectIncident(inc);
                       }}
                     >
                       <span>Dispatch</span>
-                      <ChevronRight size={13} />
+                      <ChevronRight size={13} color="#ffffff" />
                     </button>
                   </td>
                 </tr>

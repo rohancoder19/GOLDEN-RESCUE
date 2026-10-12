@@ -28,6 +28,11 @@ export default function AiDecisionCenterView({
 }) {
   const [activeTab, setActiveTab] = useState('pipeline'); // 'pipeline', 'hotspots', 'what-if', 'replay'
 
+  // Strict deduplication of incidents
+  const uniqueIncidents = Array.from(
+    new Map(incidents.map((i) => [i.incidentId, i])).values()
+  );
+
   // What-If Simulation State
   const [whatIfTitle, setWhatIfTitle] = useState('Multi-Vehicle Collision on Central Expressway');
   const [whatIfCategory, setWhatIfCategory] = useState('TRAFFIC_COLLISION');
@@ -36,11 +41,11 @@ export default function AiDecisionCenterView({
   const [simulationResult, setSimulationResult] = useState(null);
 
   // Incident Replay State
-  const completedIncidents = incidents.filter((i) => i.timeline && i.timeline.length > 1);
+  const completedIncidents = uniqueIncidents.filter((i) => i.timeline && i.timeline.length > 1);
   const [replayIncidentId, setReplayIncidentId] = useState(completedIncidents[0]?.incidentId || '');
   const [replayStepIndex, setReplayStepIndex] = useState(0);
 
-  const selectedReplayIncident = incidents.find((i) => i.incidentId === replayIncidentId) || completedIncidents[0];
+  const selectedReplayIncident = uniqueIncidents.find((i) => i.incidentId === replayIncidentId) || completedIncidents[0];
 
   const handleRunWhatIf = async () => {
     setIsSimulating(true);
@@ -61,7 +66,7 @@ export default function AiDecisionCenterView({
   };
 
   return (
-    <div className="workspace-container">
+    <div className="workspace-container" style={{ background: '#000000' }}>
       {/* Header */}
       <div
         className="glass-panel"
@@ -72,15 +77,17 @@ export default function AiDecisionCenterView({
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '12px',
+          background: '#000000',
+          border: '1px solid #2C3480',
         }}
       >
         <div>
-          <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Cpu size={20} color="#a855f7" />
+          <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Cpu size={20} color="#ffffff" />
             <span>AI DECISION CENTER & INNOVATION SUITE</span>
           </h1>
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-            Multi-Agent reasoning engine, predictive spatial hotspots, what-if dispatch sandboxing, and incident replay
+          <p style={{ fontSize: '12px', color: '#94a3b8' }}>
+            Multi-Agent clinical reasoning engine, predictive spatial corridors, what-if dispatch sandboxing, and post-action replay
           </p>
         </div>
 
@@ -96,6 +103,11 @@ export default function AiDecisionCenterView({
               key={tab.id}
               className={`filter-chip ${activeTab === tab.id ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
+              style={
+                activeTab === tab.id
+                  ? { background: '#2C3480', color: '#ffffff', borderColor: '#ffffff', fontWeight: 800 }
+                  : { background: 'rgba(44, 52, 128, 0.15)', color: '#cbd5e1' }
+              }
             >
               {tab.label}
             </button>
@@ -108,12 +120,12 @@ export default function AiDecisionCenterView({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div
             className="glass-panel"
-            style={{ padding: '16px', background: 'rgba(168, 85, 247, 0.05)', border: '1px solid rgba(168, 85, 247, 0.2)' }}
+            style={{ padding: '16px', background: 'rgba(44, 52, 128, 0.2)', border: '1px solid #2C3480' }}
           >
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#c084fc', marginBottom: '4px' }}>
-              AUTONOMOUS 8-STAGE EMERGENCY DISPATCH REASONING ARCHITECTURE
+            <div style={{ fontSize: '13px', fontWeight: 800, color: '#ffffff', marginBottom: '4px' }}>
+              AUTONOMOUS 7-STAGE EMERGENCY DISPATCH REASONING ARCHITECTURE
             </div>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+            <p style={{ fontSize: '12px', color: '#cbd5e1' }}>
               Every incident is evaluated through a decoupled deterministic operational pipeline paired with Google Gemini 2.5 Flash for clinical triage justification.
             </p>
           </div>
@@ -123,7 +135,7 @@ export default function AiDecisionCenterView({
               {
                 agent: 'Agent 1: Incident Detection Agent',
                 stage: 'DETECT & VALIDATE',
-                desc: 'Validates raw incoming payload integrity, verifies 911/CCTV/IoT source authenticity, normalizes coordinates.',
+                desc: 'Validates raw incoming payload integrity, verifies source authenticity, normalizes coordinates.',
                 latency: '1.2ms',
                 status: 'OPERATIONAL',
               },
@@ -144,28 +156,28 @@ export default function AiDecisionCenterView({
               {
                 agent: 'Agent 4: Dispatch Optimization Agent',
                 stage: 'DISPATCH RANKING',
-                desc: 'Filters busy units (prevents double-assignment), ranks available fleet by capability match (ALS vs BLS) and ETA.',
+                desc: 'Filters busy units (prevents duplicate allocation), ranks available fleet by capability match (ALS vs BLS) and ETA.',
                 latency: '3.1ms',
                 status: 'OPERATIONAL',
               },
               {
                 agent: 'Agent 5: Hospital Matching Agent',
                 stage: 'FACILITY TRIAGE',
-                desc: 'Matches receiving trauma levels (Level 1-3), verifies real ICU/bed availability, bypasses diverting hospitals.',
+                desc: 'Matches receiving trauma levels (Level 1-3), verifies open ICU/bed availability, bypasses diverting hospitals.',
                 latency: '2.8ms',
                 status: 'OPERATIONAL',
               },
               {
                 agent: 'Agent 6: Route Optimization Agent',
                 stage: 'NAVIGATION ROUTING',
-                desc: 'Interpolates turn-by-turn waypoints, incorporates simulated urban traffic congestion factor, computes ETA.',
+                desc: 'Interpolates turn-by-turn waypoints, incorporates urban congestion factors, computes accurate transit ETA.',
                 latency: '4.5ms',
                 status: 'OPERATIONAL',
               },
               {
                 agent: 'Agent 7: Coordination Agent',
                 stage: 'COMMAND & AUDIT',
-                desc: 'Synthesizes transparent rationale (WHY unit X was picked over Y), logs audit events, triggers WebSocket alert.',
+                desc: 'Synthesizes transparent rationale (WHY unit X was picked over Y), logs audit events, triggers WebSocket broadcast.',
                 latency: '1.8ms',
                 status: 'OPERATIONAL',
               },
@@ -178,26 +190,28 @@ export default function AiDecisionCenterView({
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '8px',
-                  borderTop: '3px solid var(--cyan-telemetry)',
+                  background: 'rgba(14, 18, 44, 0.7)',
+                  border: '1px solid rgba(44, 52, 128, 0.4)',
+                  borderTop: '3px solid #2C3480',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--cyan-telemetry)' }}>
+                  <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: '#ffffff', fontWeight: 800 }}>
                     {step.stage}
                   </span>
-                  <span className="telemetry-chip" style={{ fontSize: '9px' }}>
+                  <span className="telemetry-chip" style={{ fontSize: '9px', background: '#2C3480', color: '#ffffff' }}>
                     {step.latency}
                   </span>
                 </div>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>
+                <div style={{ fontSize: '13px', fontWeight: 800, color: '#ffffff' }}>
                   {step.agent}
                 </div>
-                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                <div style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: '1.5' }}>
                   {step.desc}
                 </div>
-                <div style={{ marginTop: 'auto', paddingTop: '8px', borderTop: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <CheckCircle2 size={13} color="#10b981" />
-                  <span style={{ fontSize: '10px', color: 'var(--green-ready)', fontFamily: 'var(--font-mono)' }}>
+                <div style={{ marginTop: 'auto', paddingTop: '8px', borderTop: '1px solid rgba(44, 52, 128, 0.3)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <CheckCircle2 size={13} color="#ffffff" />
+                  <span style={{ fontSize: '10px', color: '#ffffff', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
                     STATUS: {step.status}
                   </span>
                 </div>
@@ -212,13 +226,13 @@ export default function AiDecisionCenterView({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div
             className="glass-panel"
-            style={{ padding: '16px', background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.25)' }}
+            style={{ padding: '16px', background: 'rgba(44, 52, 128, 0.2)', border: '1px solid #2C3480' }}
           >
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#f59e0b', marginBottom: '4px' }}>
-              SPATIAL-TEMPORAL BAYESIAN ACCIDENT PREDICTIVE MODEL (PROBABILISTIC FORECAST)
+            <div style={{ fontSize: '13px', fontWeight: 800, color: '#ffffff', marginBottom: '4px' }}>
+              SPATIAL-TEMPORAL BAYESIAN ACCIDENT PREDICTIVE CORRIDORS
             </div>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-              Predictive risk corridors identify high-probability collision zones based on road curvature, rush-hour volume, and real-time precipitation. Ambulances can be dynamically pre-positioned before collisions occur.
+            <p style={{ fontSize: '12px', color: '#cbd5e1' }}>
+              Predictive risk corridors identify high-probability collision zones based on road curvature, rush-hour traffic volume, and real-time precipitation.
             </p>
           </div>
 
@@ -232,31 +246,33 @@ export default function AiDecisionCenterView({
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '12px',
-                  borderLeft: hs.riskLevel === 'CRITICAL_RISK' ? '4px solid #ef4444' : '4px solid #f59e0b',
+                  background: 'rgba(14, 18, 44, 0.7)',
+                  border: '1px solid rgba(44, 52, 128, 0.5)',
+                  borderLeft: '4px solid #2C3480',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--cyan-telemetry)' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#ffffff', fontWeight: 800 }}>
                     {hs.id}
                   </span>
-                  <span className={`severity-badge ${hs.riskLevel === 'CRITICAL_RISK' ? 'badge-CRITICAL' : 'badge-HIGH'}`}>
-                    {hs.riskLevel.replace('_', ' ')}
+                  <span className="telemetry-chip" style={{ background: '#2C3480', color: '#ffffff', border: '1px solid #ffffff' }}>
+                    {hs.riskLevel.replace(/_/g, ' ')}
                   </span>
                 </div>
 
-                <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff' }}>
+                <div style={{ fontSize: '14px', fontWeight: 800, color: '#ffffff' }}>
                   {hs.name}
                 </div>
 
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                <div style={{ fontSize: '12px', color: '#cbd5e1' }}>
                   Historical Monthly Incident Frequency: <strong>{hs.historicalIncidentsMonth} collisions</strong>
                 </div>
 
                 <div>
-                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>CONTRIBUTING RISK VECTORS:</div>
+                  <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700 }}>CONTRIBUTING RISK VECTORS:</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
                     {hs.primaryFactors?.map((f, i) => (
-                      <span key={i} className="telemetry-chip" style={{ fontSize: '10px' }}>
+                      <span key={i} className="telemetry-chip" style={{ fontSize: '10px', background: 'rgba(44, 52, 128, 0.25)', color: '#ffffff' }}>
                         {f}
                       </span>
                     ))}
@@ -267,10 +283,11 @@ export default function AiDecisionCenterView({
                   style={{
                     padding: '8px 10px',
                     borderRadius: '6px',
-                    background: 'rgba(16, 185, 129, 0.08)',
-                    border: '1px solid rgba(16, 185, 129, 0.25)',
+                    background: '#2C3480',
+                    border: '1px solid #ffffff',
                     fontSize: '11px',
-                    color: 'var(--green-ready)',
+                    color: '#ffffff',
+                    fontWeight: 700,
                   }}
                 >
                   🎯 RECOMMENDED STAGING: {hs.recommendedPrePositionStation}
@@ -286,39 +303,40 @@ export default function AiDecisionCenterView({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div
             className="glass-panel"
-            style={{ padding: '16px', background: 'rgba(0, 240, 255, 0.05)', border: '1px solid rgba(0, 240, 255, 0.2)' }}
+            style={{ padding: '16px', background: 'rgba(44, 52, 128, 0.2)', border: '1px solid #2C3480' }}
           >
-            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--cyan-telemetry)', marginBottom: '4px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 800, color: '#ffffff', marginBottom: '4px' }}>
               NON-OPERATIONAL WHAT-IF DISPATCH SIMULATOR
             </div>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-              Test hypothetical mass-casualty scenarios or highway bottlenecks without altering active emergency operations. Compare response times and resource exhaustion limits.
+            <p style={{ fontSize: '12px', color: '#cbd5e1' }}>
+              Test hypothetical mass-casualty scenarios without altering active emergency operations. Compare response times and resource exhaustion limits.
             </p>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            {/* Input Form */}
-            <div className="glass-panel" style={{ padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff' }}>
+            <div className="glass-panel" style={{ padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px', background: '#000000', border: '1px solid #2C3480' }}>
+              <div style={{ fontSize: '14px', fontWeight: 800, color: '#ffffff' }}>
                 CONFIGURE SIMULATION DRILL
               </div>
 
               <div className="form-group">
-                <label className="form-label">SCENARIO NAME:</label>
+                <label className="form-label" style={{ color: '#ffffff' }}>SCENARIO NAME:</label>
                 <input
                   type="text"
                   className="form-input"
                   value={whatIfTitle}
                   onChange={(e) => setWhatIfTitle(e.target.value)}
+                  style={{ background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
                 />
               </div>
 
               <div className="form-group">
-                <label className="form-label">EMERGENCY CATEGORY:</label>
+                <label className="form-label" style={{ color: '#ffffff' }}>EMERGENCY CATEGORY:</label>
                 <select
                   className="form-select"
                   value={whatIfCategory}
                   onChange={(e) => setWhatIfCategory(e.target.value)}
+                  style={{ background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
                 >
                   <option value="TRAFFIC_COLLISION">Traffic Collision</option>
                   <option value="CARDIAC_ARREST">Cardiac Arrest</option>
@@ -328,12 +346,13 @@ export default function AiDecisionCenterView({
               </div>
 
               <div className="form-group">
-                <label className="form-label">SIMULATED LOCATION:</label>
+                <label className="form-label" style={{ color: '#ffffff' }}>SIMULATED LOCATION:</label>
                 <input
                   type="text"
                   className="form-input"
                   value={whatIfAddress}
                   onChange={(e) => setWhatIfAddress(e.target.value)}
+                  style={{ background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
                 />
               </div>
 
@@ -341,16 +360,15 @@ export default function AiDecisionCenterView({
                 className="btn-primary"
                 onClick={handleRunWhatIf}
                 disabled={isSimulating}
-                style={{ marginTop: '8px', justifyContent: 'center' }}
+                style={{ marginTop: '8px', justifyContent: 'center', background: '#2C3480', border: '1px solid #ffffff', color: '#ffffff' }}
               >
-                <Play size={15} />
+                <Play size={15} color="#ffffff" />
                 <span>{isSimulating ? 'SIMULATING RESPONSE...' : 'EXECUTE WHAT-IF SIMULATION'}</span>
               </button>
             </div>
 
-            {/* Simulation Results Display */}
-            <div className="glass-panel" style={{ padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff' }}>
+            <div className="glass-panel" style={{ padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px', background: '#000000', border: '1px solid #2C3480' }}>
+              <div style={{ fontSize: '14px', fontWeight: 800, color: '#ffffff' }}>
                 PROJECTED OPERATIONAL OUTCOME
               </div>
 
@@ -360,7 +378,7 @@ export default function AiDecisionCenterView({
                     <span className={`severity-badge badge-${simulationResult.triageSeverity}`}>
                       {simulationResult.triageSeverity}
                     </span>
-                    <span className="telemetry-chip">
+                    <span className="telemetry-chip" style={{ background: '#2C3480', color: '#ffffff' }}>
                       AI CONFIDENCE: {simulationResult.confidence}%
                     </span>
                   </div>
@@ -369,17 +387,17 @@ export default function AiDecisionCenterView({
                     style={{
                       padding: '12px',
                       borderRadius: '6px',
-                      background: 'rgba(255,255,255,0.03)',
-                      border: '1px solid var(--border-subtle)',
+                      background: 'rgba(44, 52, 128, 0.2)',
+                      border: '1px solid rgba(44, 52, 128, 0.5)',
                     }}
                   >
-                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#fff' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff' }}>
                       RECOMMENDED AMBULANCE:
                     </div>
-                    <div style={{ fontSize: '13px', color: 'var(--cyan-telemetry)', fontWeight: 700 }}>
+                    <div style={{ fontSize: '13px', color: '#ffffff', fontWeight: 800 }}>
                       🚑 {simulationResult.recommendedAmbulance?.callsign || 'Mutual Aid Request Required'}
                     </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>
                       Projected Arrival Time: <strong>{simulationResult.projectedEtaMinutes || 4} minutes</strong>
                     </div>
                   </div>
@@ -388,27 +406,27 @@ export default function AiDecisionCenterView({
                     style={{
                       padding: '12px',
                       borderRadius: '6px',
-                      background: 'rgba(255,255,255,0.03)',
-                      border: '1px solid var(--border-subtle)',
+                      background: 'rgba(44, 52, 128, 0.2)',
+                      border: '1px solid rgba(44, 52, 128, 0.5)',
                     }}
                   >
-                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#fff' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff' }}>
                       RECOMMENDED DESTINATION FACILITY:
                     </div>
-                    <div style={{ fontSize: '13px', color: 'var(--green-ready)', fontWeight: 700 }}>
+                    <div style={{ fontSize: '13px', color: '#ffffff', fontWeight: 800 }}>
                       🏥 {simulationResult.recommendedHospital?.name}
                     </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>
                       Available ICU Beds: {simulationResult.recommendedHospital?.icuAvailable} beds
                     </div>
                   </div>
 
-                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                  <div style={{ fontSize: '11px', color: '#cbd5e1', fontStyle: 'italic' }}>
                     "{simulationResult.clinicalRecommendation}"
                   </div>
                 </div>
               ) : (
-                <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <div style={{ padding: '40px 20px', textAlign: 'center', color: '#94a3b8' }}>
                   Click Execute to model dispatch decisions, nearest vehicle selection, and transit times.
                 </div>
               )}
@@ -422,24 +440,23 @@ export default function AiDecisionCenterView({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div
             className="glass-panel"
-            style={{ padding: '16px', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)' }}
+            style={{ padding: '16px', background: 'rgba(44, 52, 128, 0.2)', border: '1px solid #2C3480' }}
           >
-            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--green-ready)', marginBottom: '4px' }}>
-              INCIDENT POST-ACTION REPLAY & TELEMETRY TIMELINE SCRUBBER
+            <div style={{ fontSize: '13px', fontWeight: 800, color: '#ffffff', marginBottom: '4px' }}>
+              ORIGINAL INCIDENT POST-ACTION REPLAY & TIMELINE SCRUBBER
             </div>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-              Step backward or forward through historic emergency lifecycles from the initial 911 alert through AI triage, vehicle rollout, and hospital handover.
+            <p style={{ fontSize: '12px', color: '#cbd5e1' }}>
+              Step backward or forward through authentic emergency lifecycles from initial 911 alert through AI triage, vehicle rollout, and hospital handover.
             </p>
           </div>
 
           {selectedReplayIncident ? (
-            <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* Incident Selector */}
+            <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', background: '#000000', border: '1px solid #2C3480' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)' }}>SELECT INCIDENT:</span>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff' }}>SELECT INCIDENT:</span>
                 <select
                   className="form-select"
-                  style={{ maxWidth: '400px' }}
+                  style={{ maxWidth: '400px', background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
                   value={replayIncidentId}
                   onChange={(e) => {
                     setReplayIncidentId(e.target.value);
@@ -454,11 +471,10 @@ export default function AiDecisionCenterView({
                 </select>
               </div>
 
-              {/* Scrubber Slider */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8' }}>
                   <span>START: {selectedReplayIncident.timeline?.[0]?.stage || 'REPORTED'}</span>
-                  <span>
+                  <span style={{ color: '#ffffff', fontWeight: 700 }}>
                     STEP {replayStepIndex + 1} OF {selectedReplayIncident.timeline?.length || 1}
                   </span>
                   <span>END: {selectedReplayIncident.timeline?.[selectedReplayIncident.timeline.length - 1]?.stage || 'RESOLVED'}</span>
@@ -470,42 +486,41 @@ export default function AiDecisionCenterView({
                   max={(selectedReplayIncident.timeline?.length || 1) - 1}
                   value={replayStepIndex}
                   onChange={(e) => setReplayStepIndex(Number(e.target.value))}
-                  style={{ width: '100%', accentColor: 'var(--cyan-telemetry)' }}
+                  style={{ width: '100%', accentColor: '#2C3480' }}
                 />
               </div>
 
-              {/* Current Scrubber Step Details */}
               {selectedReplayIncident.timeline?.[replayStepIndex] && (
                 <div
                   style={{
                     padding: '16px',
                     borderRadius: '8px',
-                    background: 'rgba(0, 240, 255, 0.05)',
-                    border: '1px solid rgba(0, 240, 255, 0.3)',
+                    background: '#2C3480',
+                    border: '1px solid #ffffff',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '6px',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--cyan-telemetry)' }}>
+                    <span style={{ fontSize: '14px', fontWeight: 800, color: '#ffffff' }}>
                       STAGE: {selectedReplayIncident.timeline[replayStepIndex].stage}
                     </span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#cbd5e1' }}>
                       {new Date(selectedReplayIncident.timeline[replayStepIndex].timestamp).toLocaleTimeString()}
                     </span>
                   </div>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#fff' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff' }}>
                     Actor: {selectedReplayIncident.timeline[replayStepIndex].actor}
                   </div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  <div style={{ fontSize: '12px', color: '#e2e8f0' }}>
                     {selectedReplayIncident.timeline[replayStepIndex].note}
                   </div>
                 </div>
               )}
             </div>
           ) : (
-            <div className="glass-panel" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <div className="glass-panel" style={{ padding: '40px', textAlign: 'center', color: '#94a3b8', background: '#000000' }}>
               No incidents with completed timelines available for replay.
             </div>
           )}

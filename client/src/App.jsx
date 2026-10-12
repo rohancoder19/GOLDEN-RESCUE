@@ -15,6 +15,18 @@ import { api } from './services/api';
 import { initSocket } from './services/socket';
 import { playAlertSiren, playTelemetryChirp } from './services/audio';
 
+// Helper to strictly prevent duplicate items from ever appearing
+const deduplicateBy = (list, key) => {
+  if (!Array.isArray(list)) return [];
+  const seen = new Set();
+  return list.filter((item) => {
+    const val = item[key] || item._id;
+    if (!val || seen.has(val)) return false;
+    seen.add(val);
+    return true;
+  });
+};
+
 export default function App() {
   const [currentView, setView] = useState('command-center');
   const [incidents, setIncidents] = useState([]);
@@ -26,11 +38,12 @@ export default function App() {
 
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [isNewIncidentOpen, setIsNewIncidentOpen] = useState(false);
-  const [isDemoMode, setIsDemoMode] = useState(true);
+  const [showOriginalOnly, setShowOriginalOnly] = useState(true); // Default to showing original verified data only
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch initial datasets
+  // Fetch initial datasets with strict deduplication
   const fetchAllData = async () => {
     try {
       const [incRes, ambRes, hospRes, hotRes, anaRes, audRes] = await Promise.all([
@@ -42,9 +55,9 @@ export default function App() {
         api.getAuditLogs(),
       ]);
 
-      setIncidents(incRes.incidents || []);
-      setAmbulances(ambRes.ambulances || []);
-      setHospitals(hospRes.hospitals || []);
+      setIncidents(deduplicateBy(incRes.incidents || [], 'incidentId'));
+      setAmbulances(deduplicateBy(ambRes.ambulances || [], 'vehicleId'));
+      setHospitals(deduplicateBy(hospRes.hospitals || [], 'hospitalId'));
       setHotspots(hotRes.hotspots || []);
       setAnalytics(anaRes);
       setAuditLogs(audRes.logs || []);
@@ -58,17 +71,22 @@ export default function App() {
   useEffect(() => {
     fetchAllData();
 
-    // Socket.IO real-time event listeners
+    // Socket.IO real-time event listeners with deduplication
     const socket = initSocket();
 
     socket.on('incident:created', (newInc) => {
-      setIncidents((prev) => [newInc, ...prev.filter((i) => i.incidentId !== newInc.incidentId)]);
+      setIncidents((prev) =>
+        deduplicateBy([newInc, ...prev.filter((i) => i.incidentId !== newInc.incidentId)], 'incidentId')
+      );
       if (newInc.severity === 'CRITICAL') playAlertSiren();
     });
 
     socket.on('incident:updated', (updatedInc) => {
       setIncidents((prev) =>
-        prev.map((i) => (i.incidentId === updatedInc.incidentId ? updatedInc : i))
+        deduplicateBy(
+          prev.map((i) => (i.incidentId === updatedInc.incidentId ? updatedInc : i)),
+          'incidentId'
+        )
       );
       setSelectedIncident((current) =>
         current && current.incidentId === updatedInc.incidentId ? updatedInc : current
@@ -77,10 +95,16 @@ export default function App() {
 
     socket.on('incident:dispatched', ({ incident: updatedInc, ambulance: updatedAmb }) => {
       setIncidents((prev) =>
-        prev.map((i) => (i.incidentId === updatedInc.incidentId ? updatedInc : i))
+        deduplicateBy(
+          prev.map((i) => (i.incidentId === updatedInc.incidentId ? updatedInc : i)),
+          'incidentId'
+        )
       );
       setAmbulances((prev) =>
-        prev.map((a) => (a.vehicleId === updatedAmb.vehicleId ? updatedAmb : a))
+        deduplicateBy(
+          prev.map((a) => (a.vehicleId === updatedAmb.vehicleId ? updatedAmb : a)),
+          'vehicleId'
+        )
       );
       setSelectedIncident((current) =>
         current && current.incidentId === updatedInc.incidentId ? updatedInc : current
@@ -89,19 +113,28 @@ export default function App() {
 
     socket.on('ambulance:location_update', (updatedAmb) => {
       setAmbulances((prev) =>
-        prev.map((a) => (a.vehicleId === updatedAmb.vehicleId ? updatedAmb : a))
+        deduplicateBy(
+          prev.map((a) => (a.vehicleId === updatedAmb.vehicleId ? updatedAmb : a)),
+          'vehicleId'
+        )
       );
     });
 
     socket.on('ambulance:status_change', (updatedAmb) => {
       setAmbulances((prev) =>
-        prev.map((a) => (a.vehicleId === updatedAmb.vehicleId ? updatedAmb : a))
+        deduplicateBy(
+          prev.map((a) => (a.vehicleId === updatedAmb.vehicleId ? updatedAmb : a)),
+          'vehicleId'
+        )
       );
     });
 
     socket.on('hospital:status_change', (updatedHosp) => {
       setHospitals((prev) =>
-        prev.map((h) => (h.hospitalId === updatedHosp.hospitalId ? updatedHosp : h))
+        deduplicateBy(
+          prev.map((h) => (h.hospitalId === updatedHosp.hospitalId ? updatedHosp : h)),
+          'hospitalId'
+        )
       );
     });
 
@@ -133,28 +166,57 @@ export default function App() {
 
   const handleIncidentUpdated = (updated) => {
     setIncidents((prev) =>
-      prev.map((i) => (i.incidentId === updated.incidentId ? updated : i))
+      deduplicateBy(
+        prev.map((i) => (i.incidentId === updated.incidentId ? updated : i)),
+        'incidentId'
+      )
     );
     setSelectedIncident(updated);
-    // Refresh analytics KPIs
     api.getAnalyticsKPIs().then(setAnalytics).catch(() => {});
   };
 
   const handleIncidentCreated = (newInc) => {
-    setIncidents((prev) => [newInc, ...prev]);
+    setIncidents((prev) =>
+      deduplicateBy([newInc, ...prev.filter((i) => i.incidentId !== newInc.incidentId)], 'incidentId')
+    );
     setSelectedIncident(newInc);
     api.getAnalyticsKPIs().then(setAnalytics).catch(() => {});
   };
 
-  // Filtered dataset for global search
-  const visibleIncidents = searchQuery.trim()
-    ? incidents.filter(
-        (i) =>
-          i.incidentId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          i.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (i.location?.address && i.location.address.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
-    : incidents;
+  // Filtered datasets: eliminate duplicates, respect showOriginalOnly, and apply search
+  const visibleIncidents = deduplicateBy(
+    incidents.filter((i) => {
+      if (showOriginalOnly && (i.isSimulated === true || i.dataSource === 'SIMULATED_DEMO')) {
+        return false;
+      }
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        return (
+          i.incidentId?.toLowerCase().includes(query) ||
+          i.title?.toLowerCase().includes(query) ||
+          i.location?.address?.toLowerCase().includes(query)
+        );
+      }
+      return true;
+    }),
+    'incidentId'
+  );
+
+  const visibleAmbulances = deduplicateBy(
+    ambulances.filter((a) => {
+      if (showOriginalOnly && a.isSimulated === true) return false;
+      return true;
+    }),
+    'vehicleId'
+  );
+
+  const visibleHospitals = deduplicateBy(
+    hospitals.filter((h) => {
+      if (showOriginalOnly && h.isSimulated === true) return false;
+      return true;
+    }),
+    'hospitalId'
+  );
 
   return (
     <div className="app-container">
@@ -165,7 +227,7 @@ export default function App() {
           playTelemetryChirp();
           setView(v);
         }}
-        incidents={incidents}
+        incidents={visibleIncidents}
       />
 
       {/* Main Workspace Layout */}
@@ -175,8 +237,13 @@ export default function App() {
           setSearchQuery={setSearchQuery}
           isDemoMode={isDemoMode}
           toggleDemoMode={toggleDemoMode}
+          showOriginalOnly={showOriginalOnly}
+          toggleShowOriginalOnly={() => {
+            playTelemetryChirp();
+            setShowOriginalOnly(!showOriginalOnly);
+          }}
           onOpenNewIncident={() => setIsNewIncidentOpen(true)}
-          incidents={incidents}
+          incidents={visibleIncidents}
           onSelectIncident={(inc) => setSelectedIncident(inc)}
         />
 
@@ -184,8 +251,8 @@ export default function App() {
         {currentView === 'command-center' && (
           <CommandCenterView
             incidents={visibleIncidents}
-            ambulances={ambulances}
-            hospitals={hospitals}
+            ambulances={visibleAmbulances}
+            hospitals={visibleHospitals}
             hotspots={hotspots}
             analytics={analytics}
             selectedIncident={selectedIncident}
@@ -197,6 +264,8 @@ export default function App() {
         {currentView === 'incidents' && (
           <LiveIncidentsView
             incidents={visibleIncidents}
+            showOriginalOnly={showOriginalOnly}
+            toggleShowOriginalOnly={() => setShowOriginalOnly(!showOriginalOnly)}
             onSelectIncident={(inc) => setSelectedIncident(inc)}
             onOpenNewIncident={() => setIsNewIncidentOpen(true)}
           />
@@ -205,8 +274,8 @@ export default function App() {
         {currentView === 'map' && (
           <EmergencyMapView
             incidents={visibleIncidents}
-            ambulances={ambulances}
-            hospitals={hospitals}
+            ambulances={visibleAmbulances}
+            hospitals={visibleHospitals}
             hotspots={hotspots}
             selectedIncident={selectedIncident}
             onSelectIncident={(inc) => setSelectedIncident(inc)}
@@ -215,10 +284,13 @@ export default function App() {
 
         {currentView === 'fleet' && (
           <AmbulanceFleetView
-            ambulances={ambulances}
+            ambulances={visibleAmbulances}
             onAmbulanceUpdated={(updated) =>
               setAmbulances((prev) =>
-                prev.map((a) => (a.vehicleId === updated.vehicleId ? updated : a))
+                deduplicateBy(
+                  prev.map((a) => (a.vehicleId === updated.vehicleId ? updated : a)),
+                  'vehicleId'
+                )
               )
             }
           />
@@ -226,10 +298,13 @@ export default function App() {
 
         {currentView === 'hospitals' && (
           <HospitalNetworkView
-            hospitals={hospitals}
+            hospitals={visibleHospitals}
             onHospitalUpdated={(updated) =>
               setHospitals((prev) =>
-                prev.map((h) => (h.hospitalId === updated.hospitalId ? updated : h))
+                deduplicateBy(
+                  prev.map((h) => (h.hospitalId === updated.hospitalId ? updated : h)),
+                  'hospitalId'
+                )
               )
             }
           />
@@ -237,7 +312,7 @@ export default function App() {
 
         {currentView === 'ai-decision' && (
           <AiDecisionCenterView
-            incidents={incidents}
+            incidents={visibleIncidents}
             hotspots={hotspots}
             onSelectIncident={(inc) => setSelectedIncident(inc)}
             onOpenNewIncident={() => setIsNewIncidentOpen(true)}
@@ -247,7 +322,7 @@ export default function App() {
         {currentView === 'analytics' && (
           <AnalyticsView
             analytics={analytics}
-            incidents={incidents}
+            incidents={visibleIncidents}
           />
         )}
 
@@ -265,8 +340,8 @@ export default function App() {
       {selectedIncident && (
         <IncidentDetailModal
           incident={selectedIncident}
-          ambulances={ambulances}
-          hospitals={hospitals}
+          ambulances={visibleAmbulances}
+          hospitals={visibleHospitals}
           onClose={() => setSelectedIncident(null)}
           onIncidentUpdated={handleIncidentUpdated}
         />

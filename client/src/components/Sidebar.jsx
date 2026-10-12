@@ -29,15 +29,18 @@ export default function Sidebar({ currentView, setView, incidents = [] }) {
   ];
 
   return (
-    <aside className="app-sidebar">
+    <aside className="app-sidebar" style={{ background: '#000000', borderRight: '1px solid rgba(44, 52, 128, 0.4)' }}>
       {/* Brand Identity */}
-      <div className="sidebar-brand">
-        <div className="brand-icon-wrapper">
-          <ShieldCheck size={20} color="#f59e0b" />
+      <div className="sidebar-brand" style={{ background: 'rgba(44, 52, 128, 0.15)', borderBottom: '1px solid rgba(44, 52, 128, 0.4)' }}>
+        <div
+          className="brand-icon-wrapper"
+          style={{ background: '#2C3480', border: '1px solid #ffffff', boxShadow: '0 0 12px rgba(44, 52, 128, 0.8)' }}
+        >
+          <ShieldCheck size={20} color="#ffffff" />
         </div>
         <div className="brand-title">
-          <span>GOLDEN RESCUE</span>
-          <span className="brand-tagline">Every Second Matters</span>
+          <span style={{ color: '#ffffff' }}>GOLDEN RESCUE</span>
+          <span className="brand-tagline" style={{ color: '#d1d5db' }}>Every Second Matters</span>
         </div>
       </div>
 
@@ -51,8 +54,13 @@ export default function Sidebar({ currentView, setView, incidents = [] }) {
               key={item.id}
               className={`nav-item ${isActive ? 'active' : ''}`}
               onClick={() => setView(item.id)}
+              style={
+                isActive
+                  ? { background: '#2C3480', borderColor: '#ffffff', color: '#ffffff', boxShadow: '0 0 14px rgba(44, 52, 128, 0.6)' }
+                  : { color: '#e2e8f0' }
+              }
             >
-              <Icon size={18} />
+              <Icon size={18} color={isActive ? '#ffffff' : '#cbd5e1'} />
               <span>{item.label}</span>
               {item.badge > 0 && (
                 <span className="nav-badge" title="Critical Incidents Awaiting Dispatch">
@@ -65,11 +73,12 @@ export default function Sidebar({ currentView, setView, incidents = [] }) {
                     marginLeft: 'auto',
                     fontSize: '9px',
                     fontFamily: 'var(--font-mono)',
-                    color: 'var(--cyan-telemetry)',
-                    padding: '1px 5px',
+                    color: '#ffffff',
+                    padding: '2px 6px',
                     borderRadius: '4px',
-                    background: 'var(--cyan-subtle)',
-                    border: '1px solid rgba(0,240,255,0.2)',
+                    background: '#2C3480',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    fontWeight: 700,
                   }}
                 >
                   AI CORE
@@ -81,15 +90,15 @@ export default function Sidebar({ currentView, setView, incidents = [] }) {
       </nav>
 
       {/* Footer System Telemetry Status */}
-      <div className="sidebar-footer">
+      <div className="sidebar-footer" style={{ background: '#000000', borderTop: '1px solid rgba(44, 52, 128, 0.4)' }}>
         <div className="system-status-indicator">
-          <div className="pulse-dot" />
-          <span>REAL-TIME ENGINE LIVE</span>
+          <div className="pulse-dot" style={{ backgroundColor: '#2C3480', boxShadow: '0 0 8px #ffffff' }} />
+          <span style={{ color: '#ffffff', fontWeight: 700 }}>REAL-TIME ENGINE LIVE</span>
         </div>
         <div
           style={{
             fontSize: '10px',
-            color: 'var(--text-muted)',
+            color: '#94a3b8',
             marginTop: '4px',
             fontFamily: 'var(--font-mono)',
             display: 'flex',
@@ -97,7 +106,7 @@ export default function Sidebar({ currentView, setView, incidents = [] }) {
             gap: '5px',
           }}
         >
-          <Radio size={10} color="#00f0ff" />
+          <Radio size={10} color="#2C3480" />
           <span>WS SYNC: 100% OPERATIONAL</span>
         </div>
       </div>

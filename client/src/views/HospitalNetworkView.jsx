@@ -19,6 +19,11 @@ export default function HospitalNetworkView({ hospitals = [], onHospitalUpdated 
   const [bedInput, setBedInput] = useState('');
   const [icuInput, setIcuInput] = useState('');
 
+  // Strict deduplication of hospitals by hospitalId
+  const uniqueHospitals = Array.from(
+    new Map(hospitals.map((h) => [h.hospitalId, h])).values()
+  );
+
   const handleToggleDiversion = async (hospital) => {
     const nextStatus = hospital.status === 'DIVERTING_AMBULANCES' ? 'ACCEPTING_ALL' : 'DIVERTING_AMBULANCES';
     try {
@@ -48,7 +53,7 @@ export default function HospitalNetworkView({ hospitals = [], onHospitalUpdated 
   };
 
   return (
-    <div className="workspace-container">
+    <div className="workspace-container" style={{ background: '#000000' }}>
       {/* Header */}
       <div
         className="glass-panel"
@@ -59,22 +64,24 @@ export default function HospitalNetworkView({ hospitals = [], onHospitalUpdated 
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '12px',
+          background: '#000000',
+          border: '1px solid #2C3480',
         }}
       >
         <div>
-          <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Building2 size={20} color="#10b981" />
-            <span>REGIONAL HOSPITAL NETWORK & TRAUMA RESILIENCE</span>
+          <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Building2 size={20} color="#ffffff" />
+            <span>ORIGINAL REGIONAL HOSPITAL NETWORK & TRAUMA RESILIENCE</span>
           </h1>
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-            Verified hospital capacities, ICU availability, designated trauma levels, and diversion statuses
+          <p style={{ fontSize: '12px', color: '#94a3b8' }}>
+            Verified hospital facilities, ICU availability, designated trauma levels, and diversion statuses
           </p>
         </div>
       </div>
 
       {/* Hospital Cards Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '16px' }}>
-        {hospitals.map((hosp) => {
+        {uniqueHospitals.map((hosp) => {
           const isDiverting = hosp.status === 'DIVERTING_AMBULANCES';
           const isCriticalOnly = hosp.status === 'ACCEPTING_CRITICAL_ONLY';
           const isEditing = editingHospitalId === hosp.hospitalId;
@@ -88,16 +95,18 @@ export default function HospitalNetworkView({ hospitals = [], onHospitalUpdated 
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '12px',
-                borderLeft: isDiverting ? '4px solid #ef4444' : isCriticalOnly ? '4px solid #f59e0b' : '4px solid #10b981',
+                background: 'rgba(14, 18, 44, 0.7)',
+                border: '1px solid rgba(44, 52, 128, 0.5)',
+                borderLeft: isDiverting ? '4px solid #ef4444' : isCriticalOnly ? '4px solid #f59e0b' : '4px solid #ffffff',
               }}
             >
               {/* Top Row */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff' }}>
+                  <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>
                     {hosp.name}
                   </div>
-                  <div style={{ fontSize: '11px', color: 'var(--cyan-telemetry)', fontFamily: 'var(--font-mono)' }}>
+                  <div style={{ fontSize: '11px', color: '#cbd5e1', fontFamily: 'var(--font-mono)' }}>
                     {hosp.hospitalId} • {hosp.traumaLevel}
                   </div>
                 </div>
@@ -109,9 +118,9 @@ export default function HospitalNetworkView({ hospitals = [], onHospitalUpdated 
                     fontSize: '10px',
                     fontWeight: 700,
                     fontFamily: 'var(--font-mono)',
-                    background: isDiverting ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                    color: isDiverting ? '#ef4444' : '#10b981',
-                    border: isDiverting ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(16, 185, 129, 0.4)',
+                    background: isDiverting ? 'rgba(239, 68, 68, 0.25)' : '#2C3480',
+                    color: '#ffffff',
+                    border: '1px solid #ffffff',
                   }}
                 >
                   {hosp.status.replace(/_/g, ' ')}
@@ -119,11 +128,11 @@ export default function HospitalNetworkView({ hospitals = [], onHospitalUpdated 
               </div>
 
               {/* Location & Contact */}
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+              <div style={{ fontSize: '11px', color: '#cbd5e1' }}>
                 📍 {hosp.location?.address}
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Phone size={12} /> Direct ED Line: {hosp.contactPhone}
+              <div style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Phone size={12} color="#ffffff" /> Direct ED Line: {hosp.contactPhone}
               </div>
 
               {/* Capacity Counters */}
@@ -132,30 +141,30 @@ export default function HospitalNetworkView({ hospitals = [], onHospitalUpdated 
                   display: 'grid',
                   gridTemplateColumns: '1fr 1fr',
                   gap: '10px',
-                  background: 'rgba(255,255,255,0.02)',
-                  padding: '10px',
+                  background: 'rgba(44, 52, 128, 0.2)',
+                  padding: '12px',
                   borderRadius: '6px',
-                  border: '1px solid var(--border-subtle)',
+                  border: '1px solid rgba(44, 52, 128, 0.4)',
                 }}
               >
                 <div>
-                  <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>AVAILABLE BEDS</div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, fontFamily: 'var(--font-mono)', color: '#fff' }}>
-                    {hosp.capacity?.availableBeds} <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>/ {hosp.capacity?.totalBeds}</span>
+                  <div style={{ fontSize: '10px', color: '#cbd5e1', fontWeight: 600 }}>AVAILABLE BEDS</div>
+                  <div style={{ fontSize: '20px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: '#ffffff' }}>
+                    {hosp.capacity?.availableBeds} <span style={{ fontSize: '11px', color: '#94a3b8' }}>/ {hosp.capacity?.totalBeds}</span>
                   </div>
                 </div>
 
                 <div>
-                  <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>ICU BEDS OPEN</div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, fontFamily: 'var(--font-mono)', color: (hosp.capacity?.icuAvailable || 0) > 2 ? '#10b981' : '#f59e0b' }}>
-                    {hosp.capacity?.icuAvailable} <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>/ {hosp.capacity?.icuTotal}</span>
+                  <div style={{ fontSize: '10px', color: '#cbd5e1', fontWeight: 600 }}>ICU BEDS OPEN</div>
+                  <div style={{ fontSize: '20px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: '#ffffff' }}>
+                    {hosp.capacity?.icuAvailable} <span style={{ fontSize: '11px', color: '#94a3b8' }}>/ {hosp.capacity?.icuTotal}</span>
                   </div>
                 </div>
               </div>
 
               {/* Specialties */}
               <div>
-                <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#ffffff', marginBottom: '4px' }}>
                   CLINICAL SPECIALTIES:
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
@@ -166,9 +175,9 @@ export default function HospitalNetworkView({ hospitals = [], onHospitalUpdated 
                         fontSize: '10px',
                         padding: '2px 6px',
                         borderRadius: '4px',
-                        background: 'rgba(0, 240, 255, 0.05)',
-                        border: '1px solid rgba(0, 240, 255, 0.2)',
-                        color: 'var(--text-secondary)',
+                        background: 'rgba(44, 52, 128, 0.25)',
+                        border: '1px solid rgba(44, 52, 128, 0.5)',
+                        color: '#ffffff',
                       }}
                     >
                       {spec}
@@ -184,7 +193,7 @@ export default function HospitalNetworkView({ hospitals = [], onHospitalUpdated 
                     type="number"
                     className="form-input"
                     placeholder="Beds"
-                    style={{ width: '80px', padding: '4px 8px' }}
+                    style={{ width: '80px', padding: '4px 8px', background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
                     value={bedInput}
                     onChange={(e) => setBedInput(e.target.value)}
                   />
@@ -192,20 +201,20 @@ export default function HospitalNetworkView({ hospitals = [], onHospitalUpdated 
                     type="number"
                     className="form-input"
                     placeholder="ICU"
-                    style={{ width: '80px', padding: '4px 8px' }}
+                    style={{ width: '80px', padding: '4px 8px', background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
                     value={icuInput}
                     onChange={(e) => setIcuInput(e.target.value)}
                   />
                   <button
                     className="btn-primary"
-                    style={{ padding: '4px 10px', fontSize: '11px' }}
+                    style={{ padding: '4px 10px', fontSize: '11px', background: '#2C3480', border: '1px solid #ffffff', color: '#ffffff' }}
                     onClick={() => handleSaveCapacity(hosp.hospitalId)}
                   >
                     Save
                   </button>
                   <button
                     className="btn-outline"
-                    style={{ padding: '4px 8px', fontSize: '11px' }}
+                    style={{ padding: '4px 8px', fontSize: '11px', color: '#cbd5e1' }}
                     onClick={() => setEditingHospitalId(null)}
                   >
                     Cancel
@@ -214,15 +223,16 @@ export default function HospitalNetworkView({ hospitals = [], onHospitalUpdated 
               )}
 
               {/* Actions Strip */}
-              <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '10px', display: 'flex', gap: '8px' }}>
+              <div style={{ borderTop: '1px solid rgba(44, 52, 128, 0.4)', paddingTop: '10px', display: 'flex', gap: '8px' }}>
                 <button
                   className="btn-outline"
                   style={{
                     flex: 1,
-                    padding: '4px 8px',
+                    padding: '5px 8px',
                     fontSize: '11px',
-                    borderColor: isDiverting ? 'var(--green-ready)' : '#ef4444',
-                    color: isDiverting ? 'var(--green-ready)' : '#ef4444',
+                    borderColor: isDiverting ? '#10b981' : '#ef4444',
+                    color: isDiverting ? '#10b981' : '#f87171',
+                    fontWeight: 700,
                   }}
                   onClick={() => handleToggleDiversion(hosp)}
                 >
@@ -232,7 +242,7 @@ export default function HospitalNetworkView({ hospitals = [], onHospitalUpdated 
                 {!isEditing && (
                   <button
                     className="btn-outline"
-                    style={{ padding: '4px 10px', fontSize: '11px' }}
+                    style={{ padding: '5px 12px', fontSize: '11px', background: '#2C3480', borderColor: '#ffffff', color: '#ffffff', fontWeight: 700 }}
                     onClick={() => {
                       setEditingHospitalId(hosp.hospitalId);
                       setBedInput(String(hosp.capacity?.availableBeds || ''));
