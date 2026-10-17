@@ -1,7 +1,6 @@
 import express from 'express';
 import { Incident } from '../models/Incident.js';
 import { Ambulance } from '../models/Ambulance.js';
-import { Hospital } from '../models/Hospital.js';
 import { broadcastEvent } from '../sockets/socketHandler.js';
 import { seedInitialData } from '../seed/seedData.js';
 
@@ -18,9 +17,9 @@ async function runSimulationTick() {
     const movingAmbulances = await Ambulance.find({ status: { $in: ['EN_ROUTE', 'TRANSPORTING'] } });
 
     for (const amb of movingAmbulances) {
-      if (!amb.location?.coordinates) continue;
+      if (!amb.location?.coordinates || amb.location.coordinates.length !== 2) continue;
 
-      // Add realistic microscopic heading jitter to simulate vehicle navigation
+      // Realistic microscopic heading jitter to simulate vehicle navigation
       const deltaLat = (Math.random() - 0.48) * 0.0006;
       const deltaLng = (Math.random() - 0.48) * 0.0006;
 
@@ -56,7 +55,7 @@ router.get('/status', (req, res) => {
  */
 router.post('/toggle', (req, res) => {
   const { enable } = req.body;
-  const shouldEnable = enable !== undefined ? enable : !isSimulationActive;
+  const shouldEnable = enable !== undefined ? Boolean(enable) : !isSimulationActive;
 
   if (shouldEnable && !simulationInterval) {
     simulationInterval = setInterval(runSimulationTick, 3000);
@@ -106,8 +105,8 @@ router.post('/inject', async (req, res) => {
     ];
 
     const pick = scenarioPresets[Math.floor(Math.random() * scenarioPresets.length)];
-    const count = await Incident.countDocuments();
-    const incidentId = `SIM-${String(count + 101).padStart(4, '0')}`;
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const incidentId = `SIM-2026-${randomSuffix}`;
 
     const newSimIncident = new Incident({
       incidentId,
@@ -127,10 +126,11 @@ router.post('/inject', async (req, res) => {
       isSimulated: true,
       dataSource: 'SIMULATED_DEMO',
       aiTriage: {
-        summary: 'Simulated scenario injected for live operator response drill.',
+        summary: 'Simulated drill scenario injected for live operator response training.',
         confidence: 96,
         factors: ['High speed collision', 'Autonomous sensor telemetry confirmed'],
         clinicalRecommendation: 'Immediate ALS deployment required. Divert to Level 1 Trauma Center.',
+        clinicalDisclaimer: 'SIMULATED DRILL: Synthetic scenario for training.',
       },
       timeline: [
         {

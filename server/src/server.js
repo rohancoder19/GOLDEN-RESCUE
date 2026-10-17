@@ -1,6 +1,7 @@
 import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 import app from './app.js';
 import { connectDB } from './config/db.js';
 import { setupSocket } from './sockets/socketHandler.js';
@@ -13,7 +14,7 @@ const PORT = process.env.PORT || 5000;
 
 const server = http.createServer(app);
 
-// Setup Socket.IO
+// Setup Socket.IO with CORS
 const io = new SocketIOServer(server, {
   cors: {
     origin: '*',
@@ -22,6 +23,36 @@ const io = new SocketIOServer(server, {
 });
 
 setupSocket(io);
+
+// Graceful shutdown handling
+let isShuttingDown = false;
+async function gracefulShutdown(signal) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  console.log(`\n[Server] 🛑 Received ${signal}. Initiating graceful shutdown...`);
+
+  // Close HTTP server & stop accepting new connections
+  server.close(() => {
+    console.log('[Server] 🔌 HTTP server closed.');
+  });
+
+  try {
+    io.close(() => {
+      console.log('[Server] ⚡ Socket.IO engine closed.');
+    });
+    if (mongoose.connection.readyState === 1) {
+      await mongoose.disconnect();
+      console.log('[Server] 📦 MongoDB disconnected cleanly.');
+    }
+  } catch (err) {
+    console.error('[Server] Error during shutdown:', err);
+  } finally {
+    process.exit(0);
+  }
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 // Connect DB & auto-seed if needed
 async function startServer() {

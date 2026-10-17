@@ -5,6 +5,12 @@ import { broadcastEvent } from '../sockets/socketHandler.js';
 
 const router = express.Router();
 
+const VALID_HOSPITAL_STATUSES = [
+  'ACCEPTING_ALL',
+  'ACCEPTING_CRITICAL_ONLY',
+  'DIVERTING_AMBULANCES',
+];
+
 /**
  * GET /api/hospitals - List all hospitals
  */
@@ -38,7 +44,7 @@ router.get('/:id', async (req, res) => {
 });
 
 /**
- * PATCH /api/hospitals/:id/capacity - Update hospital capacity or status
+ * PATCH /api/hospitals/:id/capacity - Update hospital capacity or status with validation
  */
 router.patch('/:id/capacity', async (req, res) => {
   try {
@@ -48,17 +54,39 @@ router.patch('/:id/capacity', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Hospital not found' });
     }
 
-    if (availableBeds !== undefined) hospital.capacity.availableBeds = Number(availableBeds);
-    if (icuAvailable !== undefined) hospital.capacity.icuAvailable = Number(icuAvailable);
-    if (status) hospital.status = status;
-    hospital.lastCapacityUpdate = new Date();
+    if (status) {
+      if (!VALID_HOSPITAL_STATUSES.includes(status)) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid hospital status: '${status}'. Allowed values: ${VALID_HOSPITAL_STATUSES.join(', ')}`,
+        });
+      }
+      hospital.status = status;
+    }
 
+    if (availableBeds !== undefined) {
+      const beds = Number(availableBeds);
+      if (isNaN(beds) || beds < 0) {
+        return res.status(400).json({ success: false, error: 'availableBeds must be a non-negative number' });
+      }
+      hospital.capacity.availableBeds = beds;
+    }
+
+    if (icuAvailable !== undefined) {
+      const icu = Number(icuAvailable);
+      if (isNaN(icu) || icu < 0) {
+        return res.status(400).json({ success: false, error: 'icuAvailable must be a non-negative number' });
+      }
+      hospital.capacity.icuAvailable = icu;
+    }
+
+    hospital.lastCapacityUpdate = new Date();
     await hospital.save();
 
     await AuditLog.create({
       action: 'HOSPITAL_CAPACITY_UPDATE',
       targetEntity: { entityType: 'HOSPITAL', entityId: hospital.hospitalId },
-      details: { availableBeds, icuAvailable, status },
+      details: { availableBeds, icuAvailable, status: hospital.status },
     });
 
     broadcastEvent('hospital:status_change', hospital);

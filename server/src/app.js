@@ -20,14 +20,29 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Middleware
+// Security Headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
+// CORS Configuration
+const allowedOrigin = process.env.CLIENT_URL || '*';
 app.use(cors({
-  origin: '*',
+  origin: allowedOrigin === '*' ? '*' : [allowedOrigin, 'http://localhost:5173', 'http://127.0.0.1:5173'],
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-app.use(express.json());
-app.use(morgan('dev'));
+
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+
+if (process.env.NODE_ENV !== 'test') {
+  app.use(morgan('dev'));
+}
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -36,12 +51,13 @@ app.get('/api/health', (req, res) => {
     status: 'ONLINE',
     service: 'GOLDEN RESCUE OPERATIONAL ENGINE',
     version: '2.5.0-FUTURISTIC',
-    uptimeSeconds: process.uptime(),
+    uptimeSeconds: Math.floor(process.uptime()),
     timestamp: new Date(),
     connections: {
       database: isDbConnected ? 'CONNECTED' : 'DISCONNECTED',
       dbHost: mongoose.connection.host || 'none',
       geminiAiEngine: model ? 'ACTIVE (gemini-2.5-flash)' : 'FALLBACK_HEURISTIC_ACTIVE',
+      socketIO: 'SYNCHRONIZED',
     },
   });
 });
@@ -70,10 +86,15 @@ app.use((req, res) => {
   res.status(404).json({ success: false, error: `Route not found: ${req.method} ${req.url}` });
 });
 
-// Global error handler
+// Global safe error handler - suppresses internal stacks in production
 app.use((err, req, res, next) => {
   console.error('[App Error]', err);
-  res.status(500).json({ success: false, error: err.message || 'Internal Server Error' });
+  const status = err.status || 500;
+  const message = process.env.NODE_ENV === 'production' && status === 500
+    ? 'An unexpected operational server error occurred.'
+    : err.message || 'Internal Server Error';
+
+  res.status(status).json({ success: false, error: message });
 });
 
 export default app;

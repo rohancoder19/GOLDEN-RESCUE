@@ -2,9 +2,13 @@
  * Calculate Haversine distance in kilometers between two coordinates [lat, lng]
  */
 export function calculateHaversineDistance(coord1, coord2) {
-  if (!coord1 || !coord2) return 999;
-  const [lat1, lon1] = coord1;
-  const [lat2, lon2] = coord2;
+  if (!coord1 || !coord2 || !Array.isArray(coord1) || !Array.isArray(coord2)) return 999;
+  const lat1 = Number(coord1[0]);
+  const lon1 = Number(coord1[1]);
+  const lat2 = Number(coord2[0]);
+  const lon2 = Number(coord2[1]);
+
+  if (isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) return 999;
 
   const R = 6371; // Earth radius in km
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -25,11 +29,14 @@ export function calculateHaversineDistance(coord1, coord2) {
  */
 export async function runLocationIntelligenceAgent(incidentCoords, ambulances = [], hospitals = []) {
   const startTime = Date.now();
-  const [lat, lng] = incidentCoords || [37.7749, -122.4194];
+  const rawCoords = incidentCoords || [37.7749, -122.4194];
+  const lat = !isNaN(Number(rawCoords[0])) ? Number(rawCoords[0]) : 37.7749;
+  const lng = !isNaN(Number(rawCoords[1])) ? Number(rawCoords[1]) : -122.4194;
+  const validIncidentCoords = [lat, lng];
 
   // Calculate distance matrix to ambulances
   const ambulanceDistances = ambulances.map((amb) => {
-    const distKm = calculateHaversineDistance(incidentCoords, amb.location?.coordinates);
+    const distKm = calculateHaversineDistance(validIncidentCoords, amb.location?.coordinates);
     return {
       vehicleId: amb.vehicleId,
       callsign: amb.callsign,
@@ -42,7 +49,7 @@ export async function runLocationIntelligenceAgent(incidentCoords, ambulances = 
 
   // Calculate distance matrix to hospitals
   const hospitalDistances = hospitals.map((hosp) => {
-    const distKm = calculateHaversineDistance(incidentCoords, hosp.location?.coordinates);
+    const distKm = calculateHaversineDistance(validIncidentCoords, hosp.location?.coordinates);
     return {
       hospitalId: hosp.hospitalId,
       name: hosp.name,

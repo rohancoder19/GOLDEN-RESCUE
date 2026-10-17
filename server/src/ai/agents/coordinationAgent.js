@@ -1,3 +1,5 @@
+import { CLINICAL_DECISION_SUPPORT_DISCLAIMER } from './severityAssessmentAgent.js';
+
 /**
  * Agent 7: Coordination Agent
  * Assembles multi-agent reasoning bundle, audits decision factors,
@@ -27,6 +29,7 @@ export async function runCoordinationAgent({
       ? `Receiving facility ${recommendedHospital.name} selected: matches trauma requirements with ${recommendedHospital.icuAvailable} verified open ICU beds.`
       : 'No hospital destination assigned.',
     knownFactors: severityOutput.output?.factors || [],
+    clinicalDisclaimer: CLINICAL_DECISION_SUPPORT_DISCLAIMER,
     uncertainties: [
       'Traffic congestion subject to dynamic local intersection blockages.',
       'Caller casualty count unverified pending responder on-scene visual confirmation.',
@@ -47,6 +50,7 @@ export async function runCoordinationAgent({
       recommendedAmbulanceId: recommendedAmbulance?.vehicleId || null,
       recommendedHospitalId: recommendedHospital?.hospitalId || null,
       etaMinutes: routeOutput.output?.etaToSceneMinutes || 5,
+      clinicalDisclaimer: CLINICAL_DECISION_SUPPORT_DISCLAIMER,
       notificationPayload: {
         broadcastType: 'PRE_ALERT_EMERGENCY_DISPATCH',
         targetAmbulance: recommendedAmbulance?.vehicleId,

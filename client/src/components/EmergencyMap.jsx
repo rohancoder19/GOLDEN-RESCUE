@@ -119,21 +119,27 @@ export default function EmergencyMap({
     ? rawCenter
     : defaultCenter;
 
-  // Active Corridor waypoints
-  const routeWaypoints = selectedIncident?.routeData?.waypoints || [
-    [37.7785, -122.4120],
-    [37.7820, -122.4040],
-    [37.7895, -122.3892],
-    [37.7631, -122.4578],
-  ];
+  // Verified route waypoints from selected incident (never invent fake paths)
+  const hasRealRoute =
+    selectedIncident?.routeData?.waypoints &&
+    Array.isArray(selectedIncident.routeData.waypoints) &&
+    selectedIncident.routeData.waypoints.length >= 2;
+  const routeWaypoints = hasRealRoute ? selectedIncident.routeData.waypoints : [];
 
-  // Tactical hazard exclusion polygon around focused incident
-  const hazardPerimeter = [
-    [mapCenter[0] + 0.003, mapCenter[1] - 0.004],
-    [mapCenter[0] + 0.005, mapCenter[1] + 0.003],
-    [mapCenter[0] - 0.002, mapCenter[1] + 0.005],
-    [mapCenter[0] - 0.004, mapCenter[1] - 0.002],
-  ];
+  // Hazard perimeter around selected critical incident
+  const hasHazardPerimeter =
+    selectedIncident &&
+    selectedIncident.severity === 'CRITICAL' &&
+    Array.isArray(mapCenter) &&
+    mapCenter.length === 2;
+  const hazardPerimeter = hasHazardPerimeter
+    ? [
+        [mapCenter[0] + 0.003, mapCenter[1] - 0.004],
+        [mapCenter[0] + 0.005, mapCenter[1] + 0.003],
+        [mapCenter[0] - 0.002, mapCenter[1] + 0.005],
+        [mapCenter[0] - 0.004, mapCenter[1] - 0.002],
+      ]
+    : [];
 
   return (
     <div style={{ position: 'relative', width: '100%', height, background: '#050e1c', overflow: 'hidden' }}>
@@ -171,30 +177,31 @@ export default function EmergencyMap({
             />
           ))}
 
-        {/* Priority Emergency Green Corridor Polyline */}
-        {layers.routes && (
-          <>
-            <Polyline
-              positions={routeWaypoints}
-              pathOptions={{
-                color: '#00d4ff',
-                weight: 3.5,
-                opacity: 0.9,
-                dashArray: '8, 6',
-              }}
-            />
-            {/* Hazard Exclusion Perimeter */}
-            <Polygon
-              positions={hazardPerimeter}
-              pathOptions={{
-                color: '#ff4d5a',
-                fillColor: '#93000a',
-                fillOpacity: 0.22,
-                weight: 1.5,
-                dashArray: '4, 4',
-              }}
-            />
-          </>
+        {/* Verified Priority Emergency Corridor Polyline */}
+        {layers.routes && hasRealRoute && (
+          <Polyline
+            positions={routeWaypoints}
+            pathOptions={{
+              color: '#00d4ff',
+              weight: 3.5,
+              opacity: 0.9,
+              dashArray: '8, 6',
+            }}
+          />
+        )}
+
+        {/* Tactical Hazard Exclusion Perimeter */}
+        {layers.routes && hasHazardPerimeter && (
+          <Polygon
+            positions={hazardPerimeter}
+            pathOptions={{
+              color: '#ff4d5a',
+              fillColor: '#93000a',
+              fillOpacity: 0.22,
+              weight: 1.5,
+              dashArray: '4, 4',
+            }}
+          />
         )}
 
         {/* Tactical Incident Markers */}

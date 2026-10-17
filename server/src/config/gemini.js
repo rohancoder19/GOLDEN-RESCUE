@@ -20,23 +20,41 @@ if (apiKey && apiKey.trim() !== '') {
 }
 
 /**
- * Generate AI reasoning using Gemini 2.5 Flash with fallback
+ * Generate AI reasoning using Gemini 2.5 Flash with timeout protection and clinical fallback
  * @param {string} prompt - Prompt to evaluate
- * @param {object} fallbackData - Structured heuristic fallback
+ * @param {object|string} fallbackData - Structured heuristic fallback
+ * @param {number} timeoutMs - Max wait time in ms before fallback (default 6000ms)
  * @returns {Promise<string>}
  */
-export async function generateAiContent(prompt, fallbackData = 'Automated AI Triage Assessment completed.') {
-  if (model) {
-    try {
+export async function generateAiContent(
+  prompt,
+  fallbackData = 'Automated AI Triage Assessment completed.',
+  timeoutMs = 6000
+) {
+  const fallbackString = typeof fallbackData === 'string' ? fallbackData : JSON.stringify(fallbackData);
+
+  if (!model) {
+    return fallbackString;
+  }
+
+  try {
+    // Timeout wrapper to guarantee the emergency pipeline never hangs
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`Gemini API call timed out after ${timeoutMs}ms`)), timeoutMs)
+    );
+
+    const callPromise = (async () => {
       const result = await model.generateContent(prompt);
       const response = await result.response;
       return response.text();
-    } catch (err) {
-      console.warn('[AI] ⚠️ Gemini API runtime error, utilizing clinical fallback:', err.message);
-      return typeof fallbackData === 'string' ? fallbackData : JSON.stringify(fallbackData);
-    }
+    })();
+
+    const responseText = await Promise.race([callPromise, timeoutPromise]);
+    return responseText;
+  } catch (err) {
+    console.warn(`[AI] ⚠️ Gemini API (${err.message}). Utilizing verified clinical heuristic fallback.`);
+    return fallbackString;
   }
-  return typeof fallbackData === 'string' ? fallbackData : JSON.stringify(fallbackData);
 }
 
 export { model, genAI };

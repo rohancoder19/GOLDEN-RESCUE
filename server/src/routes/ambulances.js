@@ -5,6 +5,15 @@ import { broadcastEvent } from '../sockets/socketHandler.js';
 
 const router = express.Router();
 
+const VALID_AMBULANCE_STATUSES = [
+  'AVAILABLE',
+  'ASSIGNED',
+  'EN_ROUTE',
+  'AT_SCENE',
+  'TRANSPORTING',
+  'OUT_OF_SERVICE',
+];
+
 /**
  * GET /api/ambulances - List all ambulances
  */
@@ -38,11 +47,19 @@ router.get('/:id', async (req, res) => {
 });
 
 /**
- * PATCH /api/ambulances/:id/status - Update ambulance status
+ * PATCH /api/ambulances/:id/status - Update ambulance status with validation
  */
 router.patch('/:id/status', async (req, res) => {
   try {
     const { status } = req.body;
+
+    if (!status || !VALID_AMBULANCE_STATUSES.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid status: '${status}'. Allowed values: ${VALID_AMBULANCE_STATUSES.join(', ')}`,
+      });
+    }
+
     const ambulance = await Ambulance.findOne({ vehicleId: req.params.id });
     if (!ambulance) {
       return res.status(404).json({ success: false, error: 'Ambulance not found' });
@@ -70,7 +87,7 @@ router.patch('/:id/status', async (req, res) => {
 });
 
 /**
- * PATCH /api/ambulances/:id/location - Update ambulance coordinates (simulated GPS ping)
+ * PATCH /api/ambulances/:id/location - Update ambulance coordinates (simulated GPS ping) with bounds checking
  */
 router.patch('/:id/location', async (req, res) => {
   try {
@@ -80,11 +97,26 @@ router.patch('/:id/location', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Ambulance not found' });
     }
 
-    if (coordinates && Array.isArray(coordinates)) {
-      ambulance.location.coordinates = coordinates;
+    if (coordinates) {
+      if (!Array.isArray(coordinates) || coordinates.length !== 2) {
+        return res.status(400).json({ success: false, error: 'Coordinates must be [latitude, longitude]' });
+      }
+      const lat = Number(coordinates[0]);
+      const lng = Number(coordinates[1]);
+      if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        return res.status(400).json({ success: false, error: 'Latitude must be -90..90 and Longitude -180..180' });
+      }
+      ambulance.location.coordinates = [lat, lng];
     }
-    if (heading !== undefined) ambulance.location.heading = heading;
-    if (speedKmh !== undefined) ambulance.location.speedKmh = speedKmh;
+
+    if (heading !== undefined) {
+      const h = Number(heading);
+      if (!isNaN(h)) ambulance.location.heading = (h % 360 + 360) % 360;
+    }
+    if (speedKmh !== undefined) {
+      const s = Number(speedKmh);
+      if (!isNaN(s) && s >= 0) ambulance.location.speedKmh = Math.min(180, s);
+    }
 
     await ambulance.save();
     broadcastEvent('ambulance:location_update', ambulance);

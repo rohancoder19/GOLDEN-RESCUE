@@ -5,6 +5,7 @@ import { runSeverityAssessmentAgent } from '../ai/agents/severityAssessmentAgent
 import { calculateHaversineDistance, runLocationIntelligenceAgent } from '../ai/agents/locationIntelligenceAgent.js';
 import { runDispatchOptimizationAgent } from '../ai/agents/dispatchOptimizationAgent.js';
 import { runHospitalMatchingAgent } from '../ai/agents/hospitalMatchingAgent.js';
+import { generateAiContent } from '../config/gemini.js';
 
 test('IncidentDetectionAgent: rejects empty payload', async () => {
   const result = await runIncidentDetectionAgent({});
@@ -26,7 +27,33 @@ test('IncidentDetectionAgent: accepts and normalizes valid incident', async () =
   assert.deepEqual(result.output.sanitizedPayload.location.coordinates, [37.78, -122.41]);
 });
 
-test('SeverityAssessmentAgent: categorizes cardiac arrest as CRITICAL', async () => {
+test('IncidentDetectionAgent: rejects out-of-bounds coordinates', async () => {
+  const invalidCoords = {
+    title: 'Off-grid incident',
+    description: 'Reporting invalid satellite coordinates',
+    location: { address: 'Null Island', coordinates: [999, -500] },
+    category: 'OTHER',
+  };
+  const result = await runIncidentDetectionAgent(invalidCoords);
+  assert.equal(result.status, 'FAILED');
+  assert.ok(result.output.errors.some((e) => e.includes('coordinate bounds')));
+});
+
+test('IncidentDetectionAgent: normalizes aliased category and source', async () => {
+  const aliased = {
+    title: 'Worker fell from scaffold',
+    description: 'Worker fell 12 feet, possible leg fracture',
+    location: { address: 'Construction Bay 4', coordinates: [37.78, -122.41] },
+    category: 'TRAUMA_FALL', // Form alias
+    source: 'VOICE_911',     // Form alias
+  };
+  const result = await runIncidentDetectionAgent(aliased);
+  assert.equal(result.status, 'SUCCESS');
+  assert.equal(result.output.detectedCategory, 'FALL_INJURY');
+  assert.equal(result.output.source, '911_VOICE');
+});
+
+test('SeverityAssessmentAgent: categorizes cardiac arrest as CRITICAL and attaches disclaimer', async () => {
   const incident = {
     title: 'Sudden collapse',
     description: 'Patient is unconscious, not breathing, pulseless',
@@ -37,6 +64,7 @@ test('SeverityAssessmentAgent: categorizes cardiac arrest as CRITICAL', async ()
   assert.equal(result.output.severity, 'CRITICAL');
   assert.ok(result.output.priorityScore >= 85);
   assert.ok(result.output.confidence >= 80);
+  assert.ok(result.output.clinicalDisclaimer.includes('DECISION SUPPORT ONLY'));
 });
 
 test('SeverityAssessmentAgent: categorizes minor sprain as LOW', async () => {
@@ -140,4 +168,11 @@ test('HospitalMatchingAgent: diverts critical patient away from diverting hospit
   const result = await runHospitalMatchingAgent(incident, hospitals, locationOutput);
   assert.equal(result.status, 'SUCCESS');
   assert.equal(result.output.recommendedHospital.hospitalId, 'HOSP-TRAUMA');
+});
+
+test('Gemini Fallback: returns clinical heuristic fallback on timeout', async () => {
+  const fallback = 'Clinical heuristic fallback activated.';
+  // Force a 1ms timeout to verify fallback trigger without network delay
+  const output = await generateAiContent('Test prompt that should fallback', fallback, 1);
+  assert.equal(output, fallback);
 });

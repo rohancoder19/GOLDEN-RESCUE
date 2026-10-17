@@ -87,4 +87,7 @@ const AmbulanceSchema = new mongoose.Schema(
   }
 );
 
+AmbulanceSchema.index({ status: 1, vehicleId: 1 });
+
 export const Ambulance = mongoose.model('Ambulance', AmbulanceSchema);
+

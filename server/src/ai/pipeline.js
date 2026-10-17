@@ -102,6 +102,7 @@ export async function runEmergencyAiPipeline(incidentData, ambulances = [], hosp
       etaMinutes: routeStep.output.etaToSceneMinutes,
     },
     decisionExplanation: coordinationStep.output.decisionExplanation,
+    clinicalDisclaimer: coordinationStep.output.clinicalDisclaimer,
     agentLogs,
   };
 }

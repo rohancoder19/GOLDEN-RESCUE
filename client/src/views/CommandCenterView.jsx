@@ -22,90 +22,10 @@ export default function CommandCenterView({
     routes: true,
   });
 
-  // Fallback demo incidents matching the Stitch spec if none loaded from backend yet
-  const defaultTacticalIncidents = [
-    {
-      incidentId: 'INC-8942',
-      title: 'Multi-Vehicle Collision & Fire',
-      severity: 'CRITICAL',
-      priorityScore: 96,
-      status: 'ON_SCENE',
-      location: {
-        address: 'Downtown Expressway (Mile 14.2)',
-        coordinates: [37.7749, -122.4194],
-      },
-      assignedUnits: 'MED-04 · FIRE-12',
-      eta: '3m 15s',
-      receivingHospital: 'Metro Central (8 Open)',
-      timeAgo: '2 min ago',
-      aiRouteStatus: 'Signal Preemption Corridor A-4 enabled (+1m 24s saved)',
-    },
-    {
-      incidentId: 'INC-8941',
-      title: 'Acute Cardiac Distress',
-      severity: 'HIGH',
-      priorityScore: 88,
-      status: 'DISPATCHED',
-      location: {
-        address: '842 Pine Street, Apt 4B',
-        coordinates: [37.7895, -122.4085],
-      },
-      assignedUnits: 'AMB-09 Dispatched',
-      eta: '4m 10s',
-      receivingHospital: 'Mercy General (14 Open)',
-      timeAgo: '5 min ago',
-    },
-    {
-      incidentId: 'INC-8939',
-      title: 'Industrial Chemical Hazmat Spill',
-      severity: 'HIGH',
-      priorityScore: 82,
-      status: 'ON_SCENE',
-      location: {
-        address: 'Bayside Logistics Dock 7',
-        coordinates: [37.7650, -122.3920],
-      },
-      assignedUnits: 'HAZMAT-01 On Scene',
-      eta: 'Containment 40%',
-      receivingHospital: 'Metro Central',
-      timeAgo: '11 min ago',
-    },
-    {
-      incidentId: 'INC-8938',
-      title: 'Pedestrian Impact',
-      severity: 'MEDIUM',
-      priorityScore: 64,
-      status: 'DISPATCHED',
-      location: {
-        address: 'Broadway & 5th Ave',
-        coordinates: [37.7980, -122.4050],
-      },
-      assignedUnits: 'AMB-14 En Route',
-      eta: '2m 45s',
-      receivingHospital: 'St. Jude Memorial',
-      timeAgo: '16 min ago',
-    },
-    {
-      incidentId: 'INC-8935',
-      title: 'Minor Heat Exhaustion',
-      severity: 'LOW',
-      priorityScore: 35,
-      status: 'ON_SCENE',
-      location: {
-        address: 'Westfield Community Arena',
-        coordinates: [37.7830, -122.4280],
-      },
-      assignedUnits: 'BIKE-MED-02 On Scene',
-      eta: 'Triage Green',
-      receivingHospital: 'Urgent Care Center',
-      timeAgo: '24 min ago',
-    },
-  ];
-
-  const mergedIncidents = incidents.length > 0 ? incidents : defaultTacticalIncidents;
+  const mergedIncidents = incidents;
 
   // Active focused incident (default to first or selected)
-  const activeFocus = selectedIncident || mergedIncidents[0] || defaultTacticalIncidents[0];
+  const activeFocus = selectedIncident || mergedIncidents[0] || null;
 
   // Filtering
   const filteredList = mergedIncidents.filter((inc) => {
@@ -123,7 +43,7 @@ export default function CommandCenterView({
     return true;
   });
 
-  const totalActiveCount = analytics?.metrics?.activeIncidents || mergedIncidents.length || 14;
+  const totalActiveCount = analytics?.metrics?.activeIncidents ?? mergedIncidents.filter((i) => i.status !== 'RESOLVED' && i.status !== 'CANCELLED').length;
 
   const toggleLayer = (key) => {
     setMapLayers((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -454,76 +374,111 @@ export default function CommandCenterView({
 
           {/* Scrollable Incident Cards */}
           <div className="incident-card-scroll-list">
-            {filteredList.map((inc) => {
-              const isSelected = activeFocus?.incidentId === inc.incidentId;
-              const severity = inc.severity || 'MEDIUM';
-
-              return (
-                <div
-                  key={inc.incidentId || inc._id}
-                  className={`incident-feed-card severity-${severity} ${isSelected ? 'selected' : ''}`}
-                  onClick={() => handleSelectIncident(inc)}
-                >
-                  <div className="incident-card-top">
-                    <span
-                      className="incident-card-id"
-                      style={{ color: severity === 'CRITICAL' ? 'var(--error)' : severity === 'HIGH' ? 'var(--secondary)' : 'var(--primary)' }}
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                        {severity === 'CRITICAL' ? 'e911_emergency' : 'warning'}
-                      </span>
-                      {inc.incidentId}
-                    </span>
-                    <span className={`incident-severity-badge badge-${severity === 'CRITICAL' ? 'crit' : severity === 'HIGH' ? 'high' : severity === 'MEDIUM' ? 'med' : 'low'}`}>
-                      {severity} {inc.priorityScore ? `${inc.priorityScore}%` : ''}
-                    </span>
-                  </div>
-
-                  <h3 className="incident-card-title">{inc.title}</h3>
-
-                  <div className="incident-card-address">
-                    <span className="material-symbols-outlined" style={{ fontSize: '14px', color: 'var(--secondary)' }}>
-                      pin_drop
-                    </span>
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {inc.location?.address || 'Metro Sector'}
-                    </span>
-                  </div>
-
-                  {/* Telemetry snippet box */}
-                  <div className="incident-telemetry-box">
-                    <div className="telemetry-row">
-                      <span style={{ color: 'var(--outline)' }}>Assigned Units:</span>
-                      <span style={{ color: 'var(--primary)', fontWeight: 700 }}>
-                        {inc.assignedUnits || inc.assignedAmbulanceCallsign || 'MED-04 · FIRE-12'}
-                      </span>
-                    </div>
-                    <div className="telemetry-row">
-                      <span style={{ color: 'var(--outline)' }}>En Route ETA:</span>
-                      <span style={{ color: 'var(--secondary)', fontWeight: 700 }}>
-                        {inc.eta || `${inc.routeData?.etaMinutes || 3}m 15s`}
-                      </span>
-                    </div>
-                    <div className="telemetry-row">
-                      <span style={{ color: 'var(--outline)' }}>Receiving Trauma:</span>
-                      <span style={{ color: 'var(--on-surface-bright)' }}>
-                        {inc.receivingHospital || inc.recommendedHospitalName || 'Metro Central (8 Open)'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="incident-card-footer">
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>schedule</span>
-                      {inc.timeAgo || '2 min ago'}
-                    </span>
-                    <span style={{ color: 'var(--primary)', fontWeight: 600 }}>
-                      Map Tracking Active →
-                    </span>
-                  </div>
+            {filteredList.length === 0 ? (
+              <div
+                style={{
+                  padding: '30px 16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  textAlign: 'center',
+                  gap: '12px',
+                  color: 'var(--outline)',
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '36px', color: 'var(--primary)' }}>
+                  task_alt
+                </span>
+                <div style={{ fontFamily: 'var(--font-headline)', fontSize: '14px', fontWeight: 700, color: 'var(--on-surface-bright)' }}>
+                  NO INCIDENTS IN QUEUE
                 </div>
-              );
-            })}
+                <p style={{ fontSize: '11.5px', maxWidth: '200px' }}>
+                  All sectors clear or filters returned 0 matching incidents.
+                </p>
+                {onOpenNewIncident && (
+                  <button
+                    type="button"
+                    className="btn-command-gold"
+                    onClick={onOpenNewIncident}
+                    style={{ width: 'auto', padding: '6px 14px', fontSize: '11px', marginTop: '6px' }}
+                  >
+                    + Report Incident
+                  </button>
+                )}
+              </div>
+            ) : (
+              filteredList.map((inc) => {
+                const isSelected = activeFocus?.incidentId === inc.incidentId;
+                const severity = inc.severity || 'MEDIUM';
+
+                return (
+                  <div
+                    key={inc.incidentId || inc._id}
+                    className={`incident-feed-card severity-${severity} ${isSelected ? 'selected' : ''}`}
+                    onClick={() => handleSelectIncident(inc)}
+                  >
+                    <div className="incident-card-top">
+                      <span
+                        className="incident-card-id"
+                        style={{ color: severity === 'CRITICAL' ? 'var(--error)' : severity === 'HIGH' ? 'var(--secondary)' : 'var(--primary)' }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                          {severity === 'CRITICAL' ? 'e911_emergency' : 'warning'}
+                        </span>
+                        {inc.incidentId}
+                      </span>
+                      <span className={`incident-severity-badge badge-${severity === 'CRITICAL' ? 'crit' : severity === 'HIGH' ? 'high' : severity === 'MEDIUM' ? 'med' : 'low'}`}>
+                        {severity} {inc.priorityScore ? `${inc.priorityScore}%` : ''}
+                      </span>
+                    </div>
+
+                    <h3 className="incident-card-title">{inc.title}</h3>
+
+                    <div className="incident-card-address">
+                      <span className="material-symbols-outlined" style={{ fontSize: '14px', color: 'var(--secondary)' }}>
+                        pin_drop
+                      </span>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {inc.location?.address || 'Metro Sector'}
+                      </span>
+                    </div>
+
+                    {/* Telemetry snippet box */}
+                    <div className="incident-telemetry-box">
+                      <div className="telemetry-row">
+                        <span style={{ color: 'var(--outline)' }}>Assigned Unit:</span>
+                        <span style={{ color: 'var(--primary)', fontWeight: 700 }}>
+                          {inc.assignedAmbulanceCallsign || inc.assignedAmbulanceId || 'Pending Dispatch'}
+                        </span>
+                      </div>
+                      <div className="telemetry-row">
+                        <span style={{ color: 'var(--outline)' }}>Status:</span>
+                        <span style={{ color: 'var(--secondary)', fontWeight: 700 }}>
+                          {inc.status}
+                        </span>
+                      </div>
+                      <div className="telemetry-row">
+                        <span style={{ color: 'var(--outline)' }}>Receiving Hospital:</span>
+                        <span style={{ color: 'var(--on-surface-bright)' }}>
+                          {inc.recommendedHospitalName || 'Metro General Trauma'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="incident-card-footer">
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>schedule</span>
+                        {new Date(inc.timestamps?.reportedAt || inc.createdAt || Date.now()).toLocaleTimeString()}
+                      </span>
+                      <span style={{ color: 'var(--primary)', fontWeight: 600 }}>
+                        Focus File →
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </aside>
 

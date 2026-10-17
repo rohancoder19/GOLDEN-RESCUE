@@ -123,6 +123,7 @@ const IncidentSchema = new mongoose.Schema(
         },
       ],
       clinicalRecommendation: { type: String, default: '' },
+      clinicalDisclaimer: { type: String, default: 'DECISION SUPPORT ONLY: Not an authoritative clinical diagnosis.' },
     },
     timeline: [
       {
@@ -145,10 +146,12 @@ const IncidentSchema = new mongoose.Schema(
       type: String,
       enum: ['LIVE_EXTERNAL', 'USER_SUBMITTED', 'STORED_DATABASE', 'SIMULATED_DEMO'],
       default: 'STORED_DATABASE',
+      index: true,
     },
     isSimulated: {
       type: Boolean,
       default: false,
+      index: true,
     },
   },
   {
@@ -156,4 +159,8 @@ const IncidentSchema = new mongoose.Schema(
   }
 );
 
+IncidentSchema.index({ status: 1, severity: 1 });
+IncidentSchema.index({ createdAt: -1 });
+
 export const Incident = mongoose.model('Incident', IncidentSchema);
+

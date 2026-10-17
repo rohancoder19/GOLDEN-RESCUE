@@ -102,6 +102,20 @@ export default function IncidentDetailModal({
             >
               {incident.status}
             </span>
+            <span
+              style={{
+                fontFamily: 'var(--font-telemetry)',
+                fontSize: '9.5px',
+                padding: '2px 6px',
+                borderRadius: '3px',
+                background: incident.isSimulated || incident.dataSource === 'SIMULATED_DEMO' ? 'rgba(255, 189, 88, 0.15)' : 'rgba(0, 212, 255, 0.15)',
+                color: incident.isSimulated || incident.dataSource === 'SIMULATED_DEMO' ? 'var(--secondary)' : 'var(--primary)',
+                border: `1px solid ${incident.isSimulated || incident.dataSource === 'SIMULATED_DEMO' ? 'var(--secondary)' : 'var(--primary)'}`,
+                fontWeight: 700,
+              }}
+            >
+              {incident.dataSource || (incident.isSimulated ? 'SIMULATED_DEMO' : 'STORED_DATABASE')}
+            </span>
           </div>
           <button
             type="button"
@@ -379,6 +393,28 @@ export default function IncidentDetailModal({
                       • {f}
                     </div>
                   ))}
+                </div>
+              </div>
+
+              {/* Mandatory Clinical Decision Support Disclaimer */}
+              <div
+                style={{
+                  padding: '12px 14px',
+                  background: 'rgba(5, 14, 28, 0.9)',
+                  border: '1px solid var(--secondary)',
+                  borderRadius: 'var(--radius-sm)',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '10px',
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--secondary)', flexShrink: 0, marginTop: '2px' }}>
+                  gavel
+                </span>
+                <div style={{ fontSize: '11px', color: 'var(--on-surface)', lineHeight: '1.5' }}>
+                  <strong style={{ color: 'var(--secondary)' }}>DECISION SUPPORT ONLY: </strong>
+                  {incident.aiTriage?.clinicalDisclaimer ||
+                    'AI-generated clinical assessment is intended solely for emergency dispatch decision support and operational resource prioritization. It does NOT constitute an authoritative clinical diagnosis. Patient care remains subject to on-scene paramedic evaluation and authorized physician protocols.'}
                 </div>
               </div>
             </div>

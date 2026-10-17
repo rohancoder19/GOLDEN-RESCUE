@@ -95,7 +95,7 @@ export default function NewIncidentModal({ onClose, onIncidentCreated }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title || !description || !address) {
+    if (!title.trim() || !description.trim() || !address.trim()) {
       setErrorMessage('Please provide Title, Description, and Address.');
       return;
     }
@@ -105,17 +105,17 @@ export default function NewIncidentModal({ onClose, onIncidentCreated }) {
 
     try {
       const payload = {
-        title,
+        title: title.trim(),
         category,
-        description,
+        description: description.trim(),
         location: {
-          address,
+          address: address.trim(),
           coordinates,
           district: 'Metro Operational Sector',
         },
         callerInfo: {
-          name: callerName || '911 Reporter',
-          phone: callerPhone || '+1 (415) 555-0199',
+          name: callerName.trim() || '911 Reporter',
+          phone: callerPhone.trim() || '+1 (415) 555-0199',
         },
         source,
       };
@@ -249,7 +249,7 @@ export default function NewIncidentModal({ onClose, onIncidentCreated }) {
                 <textarea
                   className="form-textarea"
                   rows="4"
-                  placeholder="e.g. 911 dispatch, caller reporting multi-car rollover crash on Downtown Expressway mile marker 14. 4 occupants injured, engine compartment smoking."
+                  placeholder="e.g. 911 dispatch, caller reporting multi-car rollover crash on Downtown Expressway near 4th street. 4 occupants injured, engine compartment smoking."
                   value={transcript}
                   onChange={(e) => setTranscript(e.target.value)}
                 />
@@ -290,11 +290,13 @@ export default function NewIncidentModal({ onClose, onIncidentCreated }) {
                   >
                     <option value="TRAFFIC_COLLISION">Traffic Collision</option>
                     <option value="CARDIAC_ARREST">Cardiac Arrest</option>
-                    <option value="INDUSTRIAL_FIRE">Industrial Fire / Hazmat</option>
                     <option value="STROKE_NEURO">Stroke / Neurological</option>
                     <option value="RESPIRATORY_DISTRESS">Respiratory Distress</option>
-                    <option value="TRAUMA_FALL">Trauma / Fall</option>
-                    <option value="MASS_CASUALTY">Mass Casualty Incident (MCI)</option>
+                    <option value="INDUSTRIAL_FIRE">Industrial Fire</option>
+                    <option value="HAZMAT_EXPOSURE">Hazardous Materials (HAZMAT)</option>
+                    <option value="PEDIATRIC_TRAUMA">Pediatric Trauma</option>
+                    <option value="FALL_INJURY">Fall / Musculoskeletal Injury</option>
+                    <option value="OTHER">Other Emergency</option>
                   </select>
                 </div>
 
@@ -306,9 +308,11 @@ export default function NewIncidentModal({ onClose, onIncidentCreated }) {
                     onChange={(e) => setSource(e.target.value)}
                   >
                     <option value="OPERATOR_MANUAL">Operator Console</option>
-                    <option value="VOICE_911">911 Voice Call</option>
+                    <option value="911_VOICE">911 Voice Call</option>
                     <option value="CCTV_AI">Smart City CCTV AI</option>
                     <option value="IOT_SENSOR">IoT Crash Sensor</option>
+                    <option value="CITIZEN_MOBILE">Citizen Mobile SOS</option>
+                    <option value="VOICE_REPORT">Voice Audio Report</option>
                   </select>
                 </div>
               </div>
@@ -358,6 +362,21 @@ export default function NewIncidentModal({ onClose, onIncidentCreated }) {
                     onChange={(e) => setCallerPhone(e.target.value)}
                   />
                 </div>
+              </div>
+
+              {/* Clinical Decision Support Disclaimer */}
+              <div
+                style={{
+                  fontSize: '11px',
+                  color: 'var(--outline)',
+                  fontFamily: 'var(--font-telemetry)',
+                  background: 'var(--surface-container-lowest)',
+                  padding: '8px 12px',
+                  borderRadius: '3px',
+                  border: '1px solid var(--border-tactical)',
+                }}
+              >
+                ⚖️ <strong>Decision Support:</strong> Triage calculation and recommendations assist licensed dispatchers and paramedics. Not an automated medical diagnosis.
               </div>
 
               <div className="modal-footer" style={{ padding: '12px 0 0 0', background: 'transparent' }}>

@@ -1,5 +1,8 @@
 import { generateAiContent } from '../../config/gemini.js';
 
+export const CLINICAL_DECISION_SUPPORT_DISCLAIMER =
+  'DECISION SUPPORT ONLY: AI-generated triage assessment is intended solely for emergency dispatch decision support and operational resource prioritization. It does NOT constitute an authoritative clinical diagnosis. Patient care remains subject to on-scene paramedic evaluation and authorized physician protocols.';
+
 /**
  * Agent 2: Severity Assessment Agent
  * Combines clinical heuristic rule engine with Google Gemini 2.5 Flash
@@ -7,7 +10,7 @@ import { generateAiContent } from '../../config/gemini.js';
  */
 export async function runSeverityAssessmentAgent(incident) {
   const startTime = Date.now();
-  const text = `${incident.title} ${incident.description} ${incident.category}`.toLowerCase();
+  const text = `${incident.title || ''} ${incident.description || ''} ${incident.category || ''}`.toLowerCase();
 
   const factors = [];
   let score = 40; // baseline
@@ -60,7 +63,7 @@ export async function runSeverityAssessmentAgent(incident) {
     score = Math.min(score, 35);
   }
 
-  // Bound score
+  // Bound score strictly between 15 and 99
   score = Math.min(99, Math.max(15, score));
 
   // Determine severity tier
@@ -74,9 +77,9 @@ export async function runSeverityAssessmentAgent(incident) {
   }
 
   // Calibrate confidence
-  const confidence = Math.min(98, 80 + (factors.length * 4));
+  const confidence = Math.min(98, 80 + factors.length * 4);
 
-  // Generate concise clinical explanation with Gemini
+  // Generate concise clinical explanation with Gemini (with 5000ms timeout)
   const prompt = `You are the Golden Rescue Chief Triage AI. Provide a concise 2-sentence clinical emergency justification for:
 Incident: "${incident.title}"
 Category: "${incident.category}"
@@ -87,7 +90,7 @@ State the primary clinical danger and the mandatory response standard.`;
 
   const fallbackReasoning = `${severity} priority assigned (Score ${score}/100). Primary danger: ${factors[0]}. Requires immediate ALS intervention and rapid stabilization.`;
 
-  const clinicalRecommendation = await generateAiContent(prompt, fallbackReasoning);
+  const clinicalRecommendation = await generateAiContent(prompt, fallbackReasoning, 5000);
 
   const durationMs = Date.now() - startTime;
 
@@ -103,6 +106,7 @@ State the primary clinical danger and the mandatory response standard.`;
       confidence,
       factors,
       clinicalRecommendation: clinicalRecommendation.trim(),
+      clinicalDisclaimer: CLINICAL_DECISION_SUPPORT_DISCLAIMER,
       canOverride: true,
     },
   };

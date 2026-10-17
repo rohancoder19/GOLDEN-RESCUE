@@ -45,4 +45,7 @@ const AuditLogSchema = new mongoose.Schema(
   }
 );
 
+AuditLogSchema.index({ incidentId: 1, timestamp: -1 });
+
 export const AuditLog = mongoose.model('AuditLog', AuditLogSchema);
+

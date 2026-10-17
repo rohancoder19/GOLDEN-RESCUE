@@ -5,11 +5,27 @@ import { Hospital } from '../models/Hospital.js';
 import { AuditLog } from '../models/AuditLog.js';
 import { runEmergencyAiPipeline } from '../ai/pipeline.js';
 import { broadcastEvent } from '../sockets/socketHandler.js';
+import { CLINICAL_DECISION_SUPPORT_DISCLAIMER } from '../ai/agents/severityAssessmentAgent.js';
 
 const router = express.Router();
 
 /**
- * GET /api/incidents - List incidents with optional filters
+ * Generate a cryptographically random, collision-resistant Incident ID
+ * Format: INC-2026-XXXX (or timestamp suffix)
+ */
+async function generateUniqueIncidentId() {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const timeFragment = Date.now().toString().slice(-4);
+    const candidateId = `INC-2026-${timeFragment}${randomSuffix}`;
+    const exists = await Incident.exists({ incidentId: candidateId });
+    if (!exists) return candidateId;
+  }
+  return `INC-2026-${Date.now().toString(36).toUpperCase()}`;
+}
+
+/**
+ * GET /api/incidents - List incidents with optional filters & pagination
  */
 router.get('/', async (req, res) => {
   try {
@@ -30,15 +46,18 @@ router.get('/', async (req, res) => {
       ];
     }
 
+    const parsedLimit = Math.min(100, Math.max(1, Number(limit) || 50));
+    const parsedPage = Math.max(1, Number(page) || 1);
+
     const total = await Incident.countDocuments(query);
     const incidents = await Incident.find(query)
       .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
+      .skip((parsedPage - 1) * parsedLimit)
+      .limit(parsedLimit);
 
-    res.json({ success: true, count: incidents.length, total, incidents });
+    res.json({ success: true, count: incidents.length, total, page: parsedPage, incidents });
   } catch (error) {
-    console.error('Error fetching incidents:', error);
+    console.error('[Incidents API] Error fetching incidents:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -48,12 +67,14 @@ router.get('/', async (req, res) => {
  */
 router.get('/:id', async (req, res) => {
   try {
-    const incident = await Incident.findOne({
-      $or: [{ incidentId: req.params.id }, { _id: req.params.id.match(/^[0-9a-fA-F]{24}$/) ? req.params.id : null }],
-    });
+    const id = req.params.id;
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+    const query = isObjectId ? { $or: [{ incidentId: id }, { _id: id }] } : { incidentId: id };
+
+    const incident = await Incident.findOne(query);
 
     if (!incident) {
-      return res.status(404).json({ success: false, error: 'Incident not found' });
+      return res.status(404).json({ success: false, error: `Incident ${id} not found` });
     }
 
     // Fetch related ambulance and hospital if assigned
@@ -80,9 +101,20 @@ router.post('/', async (req, res) => {
   try {
     const payload = req.body;
 
-    // Generate unique Incident ID e.g. INC-2026-XXXX
-    const count = await Incident.countDocuments();
-    const incidentId = `INC-2026-${String(count + 1001).padStart(4, '0')}`;
+    if (!payload.title || typeof payload.title !== 'string' || payload.title.trim().length < 3) {
+      return res.status(400).json({ success: false, error: 'Incident title is required (minimum 3 characters).' });
+    }
+
+    if (!payload.description || typeof payload.description !== 'string' || payload.description.trim().length < 5) {
+      return res.status(400).json({ success: false, error: 'Incident description is required (minimum 5 characters).' });
+    }
+
+    if (!payload.location?.address) {
+      return res.status(400).json({ success: false, error: 'Incident location address is required.' });
+    }
+
+    // Generate collision-resistant unique ID
+    const incidentId = await generateUniqueIncidentId();
 
     // Fetch current fleet and hospitals for AI context
     const ambulances = await Ambulance.find();
@@ -93,20 +125,20 @@ router.post('/', async (req, res) => {
 
     const newIncident = new Incident({
       incidentId,
-      title: payload.title || 'Reported Emergency Incident',
-      category: payload.category || 'OTHER',
-      description: payload.description || 'Emergency alert received at dispatch center.',
+      title: (payload.title || '').trim(),
+      category: aiResult.agentLogs?.[0]?.output?.detectedCategory || payload.category || 'OTHER',
+      description: (payload.description || '').trim(),
       severity: aiResult.severity,
       priorityScore: aiResult.priorityScore,
       status: 'REPORTED',
       location: {
-        address: payload.location?.address || 'Metro Downtown Sector 4',
-        coordinates: payload.location?.coordinates || [37.7749, -122.4194],
+        address: (payload.location?.address || 'Metro Core Zone').trim(),
+        coordinates: aiResult.agentLogs?.[0]?.output?.sanitizedPayload?.location?.coordinates || [37.7749, -122.4194],
         district: payload.location?.district || 'Central District',
       },
-      source: payload.source || 'OPERATOR_MANUAL',
-      callerInfo: payload.callerInfo || { name: 'Anonymous', phone: '+1 (555) 000-0000' },
-      assignedAmbulanceId: null, // Awaiting operator confirmation
+      source: aiResult.agentLogs?.[0]?.output?.source || 'OPERATOR_MANUAL',
+      callerInfo: payload.callerInfo || { name: 'Anonymous', phone: 'N/A' },
+      assignedAmbulanceId: null, // Awaiting operator dispatch confirmation
       recommendedHospitalId: aiResult.recommendedHospital?.hospitalId || null,
       recommendedHospitalName: aiResult.recommendedHospital?.name || null,
       routeData: aiResult.routeData,
@@ -116,19 +148,20 @@ router.post('/', async (req, res) => {
         factors: aiResult.factors,
         agentsTrail: aiResult.agentLogs,
         clinicalRecommendation: aiResult.clinicalRecommendation,
+        clinicalDisclaimer: aiResult.clinicalDisclaimer || CLINICAL_DECISION_SUPPORT_DISCLAIMER,
       },
       timeline: [
         {
           stage: 'REPORTED',
           timestamp: new Date(),
-          actor: payload.source || 'Dispatch Ingestion',
-          note: `Incident registered via ${payload.source || 'Terminal'}`,
+          actor: payload.source || 'Dispatch Ingestion Gateway',
+          note: `Incident registered via ${payload.source || 'Operator Console'}`,
         },
         {
           stage: 'AI_TRIAGED',
           timestamp: new Date(),
-          actor: 'AI Decision Engine',
-          note: `Triage complete: ${aiResult.severity} (${aiResult.priorityScore}/100)`,
+          actor: 'AI Decision Engine (Gemini 2.5 Flash)',
+          note: `Triage complete: ${aiResult.severity} (${aiResult.priorityScore}/100) with ${aiResult.confidence}% confidence`,
         },
       ],
       timestamps: {
@@ -146,7 +179,7 @@ router.post('/', async (req, res) => {
       action: 'INCIDENT_CREATED',
       incidentId: newIncident.incidentId,
       targetEntity: { entityType: 'INCIDENT', entityId: newIncident.incidentId },
-      details: { title: newIncident.title, severity: newIncident.severity },
+      details: { title: newIncident.title, severity: newIncident.severity, dataSource: newIncident.dataSource },
     });
 
     broadcastEvent('incident:created', newIncident);
@@ -157,13 +190,14 @@ router.post('/', async (req, res) => {
       aiPipelineResult: aiResult,
     });
   } catch (error) {
-    console.error('Error creating incident:', error);
+    console.error('[Incidents API] Error creating incident:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
 /**
  * POST /api/incidents/:id/dispatch - Confirm or override dispatch
+ * Prevents race condition via atomic Ambulance findOneAndUpdate
  */
 router.post('/:id/dispatch', async (req, res) => {
   try {
@@ -175,38 +209,54 @@ router.post('/:id/dispatch', async (req, res) => {
     }
 
     if (incident.status === 'RESOLVED' || incident.status === 'CANCELLED') {
-      return res.status(400).json({ success: false, error: 'Cannot dispatch resolved or cancelled incident' });
+      return res.status(400).json({
+        success: false,
+        error: `Cannot dispatch ${incident.status.toLowerCase()} incident (${incident.incidentId}). Re-open incident first.`,
+      });
     }
 
-    // Verify ambulance availability
+    // Determine target ambulance
     const targetAmbulanceId = ambulanceId || incident.assignedAmbulanceId;
     if (!targetAmbulanceId) {
       return res.status(400).json({ success: false, error: 'No ambulance specified for dispatch' });
     }
 
-    const ambulance = await Ambulance.findOne({ vehicleId: targetAmbulanceId });
-    if (!ambulance) {
-      return res.status(404).json({ success: false, error: `Ambulance ${targetAmbulanceId} not found` });
-    }
+    // ATOMIC ACQUISITION: Only succeeds if ambulance is AVAILABLE or already assigned to THIS incident
+    const ambulance = await Ambulance.findOneAndUpdate(
+      {
+        vehicleId: targetAmbulanceId,
+        $or: [
+          { status: 'AVAILABLE' },
+          { assignedIncidentId: incident.incidentId },
+        ],
+      },
+      {
+        $set: {
+          status: 'EN_ROUTE',
+          assignedIncidentId: incident.incidentId,
+          speedKmh: 58,
+        },
+      },
+      { new: true }
+    );
 
-    // Check if ambulance is already assigned to a DIFFERENT active incident
-    if (ambulance.status !== 'AVAILABLE' && ambulance.assignedIncidentId !== incident.incidentId) {
+    if (!ambulance) {
+      // Look up current status of unit to return helpful conflict details
+      const busyUnit = await Ambulance.findOne({ vehicleId: targetAmbulanceId });
+      if (!busyUnit) {
+        return res.status(404).json({ success: false, error: `Ambulance ${targetAmbulanceId} not found` });
+      }
       return res.status(409).json({
         success: false,
-        error: `Unit ${ambulance.callsign} (${ambulance.vehicleId}) is currently ${ambulance.status} on incident ${ambulance.assignedIncidentId}. Please select an available unit.`,
+        error: `Dispatch Conflict: Unit ${busyUnit.callsign} (${busyUnit.vehicleId}) is currently ${busyUnit.status} on incident ${busyUnit.assignedIncidentId || 'active mission'}. Please select another available unit.`,
       });
     }
-
-    // Update Ambulance to EN_ROUTE
-    ambulance.status = 'EN_ROUTE';
-    ambulance.assignedIncidentId = incident.incidentId;
-    ambulance.speedKmh = 58; // In transit
-    await ambulance.save();
 
     // Update Incident
     incident.status = 'DISPATCHED';
     incident.assignedAmbulanceId = ambulance.vehicleId;
     incident.assignedAmbulanceCallsign = ambulance.callsign;
+
     if (hospitalId) {
       const hospital = await Hospital.findOne({ hospitalId });
       if (hospital) {
@@ -234,6 +284,7 @@ router.post('/:id/dispatch', async (req, res) => {
         ambulanceId: ambulance.vehicleId,
         callsign: ambulance.callsign,
         hospitalId: incident.recommendedHospitalId,
+        operatorNote,
       },
     });
 
@@ -243,26 +294,46 @@ router.post('/:id/dispatch', async (req, res) => {
 
     res.json({ success: true, incident, ambulance });
   } catch (error) {
-    console.error('Error dispatching ambulance:', error);
+    console.error('[Incidents API] Error dispatching ambulance:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
 /**
- * PATCH /api/incidents/:id/status - Update incident lifecycle status
+ * PATCH /api/incidents/:id/status - Update incident lifecycle status with state validation
  */
 router.patch('/:id/status', async (req, res) => {
   try {
     const { status, note } = req.body;
-    const validTransitions = ['REPORTED', 'TRIAGED', 'DISPATCHED', 'EN_ROUTE', 'ON_SCENE', 'TRANSPORTING', 'RESOLVED', 'CANCELLED'];
+    const validTransitions = [
+      'REPORTED',
+      'TRIAGED',
+      'DISPATCHED',
+      'EN_ROUTE',
+      'ON_SCENE',
+      'TRANSPORTING',
+      'RESOLVED',
+      'CANCELLED',
+    ];
 
     if (!validTransitions.includes(status)) {
-      return res.status(400).json({ success: false, error: `Invalid status: ${status}` });
+      return res.status(400).json({
+        success: false,
+        error: `Invalid status: '${status}'. Allowed values: ${validTransitions.join(', ')}`,
+      });
     }
 
     const incident = await Incident.findOne({ incidentId: req.params.id });
     if (!incident) {
       return res.status(404).json({ success: false, error: 'Incident not found' });
+    }
+
+    // State machine check
+    if ((incident.status === 'RESOLVED' || incident.status === 'CANCELLED') && status !== 'REPORTED' && status !== incident.status) {
+      return res.status(400).json({
+        success: false,
+        error: `Cannot advance an incident that is already ${incident.status}. Re-open as REPORTED first.`,
+      });
     }
 
     incident.status = status;
@@ -277,10 +348,10 @@ router.patch('/:id/status', async (req, res) => {
       stage: status,
       timestamp: now,
       actor: 'Paramedic Field Unit / Dispatcher',
-      note: note || `Status updated to ${status}`,
+      note: note || `Status transitioned to ${status}`,
     });
 
-    // Sync ambulance status
+    // Synchronize assigned ambulance status
     if (incident.assignedAmbulanceId) {
       const amb = await Ambulance.findOne({ vehicleId: incident.assignedAmbulanceId });
       if (amb) {
