@@ -1,16 +1,4 @@
 import React, { useState } from 'react';
-import {
-  AlertTriangle,
-  Search,
-  Filter,
-  PlusCircle,
-  Navigation,
-  Clock,
-  User,
-  Phone,
-  ShieldCheck,
-  ChevronRight,
-} from 'lucide-react';
 
 export default function LiveIncidentsView({
   incidents = [],
@@ -35,9 +23,9 @@ export default function LiveIncidentsView({
     if (searchTerm.trim() !== '') {
       const term = searchTerm.toLowerCase();
       const match =
-        inc.incidentId.toLowerCase().includes(term) ||
-        inc.title.toLowerCase().includes(term) ||
-        inc.description.toLowerCase().includes(term) ||
+        inc.incidentId?.toLowerCase().includes(term) ||
+        inc.title?.toLowerCase().includes(term) ||
+        inc.description?.toLowerCase().includes(term) ||
         (inc.location?.address && inc.location.address.toLowerCase().includes(term));
       if (!match) return false;
     }
@@ -45,10 +33,9 @@ export default function LiveIncidentsView({
   });
 
   return (
-    <div className="workspace-container" style={{ background: '#000000' }}>
+    <div className="workspace-container">
       {/* Header and Controls */}
       <div
-        className="glass-panel"
         style={{
           padding: '16px 20px',
           display: 'flex',
@@ -56,41 +43,45 @@ export default function LiveIncidentsView({
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '14px',
-          background: '#000000',
-          border: '1px solid #2C3480',
+          background: 'var(--surface-container-low)',
+          border: '1px solid var(--border-tactical)',
+          borderRadius: 'var(--radius-md)',
+          boxShadow: 'var(--shadow-tactical)',
         }}
       >
         <div>
-          <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff' }}>
-            ORIGINAL LIVE INCIDENT DISPATCH QUEUE
+          <h1 style={{ fontFamily: 'var(--font-headline)', fontSize: '20px', fontWeight: 700, color: 'var(--on-surface-bright)', letterSpacing: '-0.01em' }}>
+            TACTICAL LIVE INCIDENT QUEUE
           </h1>
-          <p style={{ fontSize: '12px', color: '#94a3b8' }}>
-            Deduplicated emergency records verified against MongoDB Atlas (Showing {filteredIncidents.length} original cases)
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--outline)', marginTop: '2px' }}>
+            Real-time verified emergency stream (Showing {filteredIncidents.length} active triage cases)
           </p>
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
           {toggleShowOriginalOnly && (
             <button
-              className="btn-outline"
+              type="button"
+              className="btn-hud-tactical"
               onClick={toggleShowOriginalOnly}
               style={{
-                background: showOriginalOnly ? '#2C3480' : 'transparent',
-                borderColor: showOriginalOnly ? '#ffffff' : 'rgba(44, 52, 128, 0.6)',
-                color: '#ffffff',
+                background: showOriginalOnly ? 'var(--surface-container-high)' : 'transparent',
+                borderColor: showOriginalOnly ? 'var(--primary)' : 'var(--border-tactical)',
+                color: showOriginalOnly ? 'var(--primary)' : 'var(--outline)',
               }}
             >
-              <ShieldCheck size={14} color="#ffffff" />
+              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>shield</span>
               <span>{showOriginalOnly ? 'Original Data Verified' : 'Show All Data'}</span>
             </button>
           )}
 
           <button
-            className="btn-dispatch"
+            type="button"
+            className="btn-command-gold"
             onClick={onOpenNewIncident}
-            style={{ background: '#2C3480', border: '1px solid #ffffff', color: '#ffffff' }}
+            style={{ width: 'auto', padding: '8px 16px', fontSize: '12.5px' }}
           >
-            <PlusCircle size={16} color="#ffffff" />
+            <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>add_circle</span>
             <span>Report New Incident</span>
           </button>
         </div>
@@ -98,59 +89,60 @@ export default function LiveIncidentsView({
 
       {/* Filter and Search Bar */}
       <div
-        className="glass-panel"
         style={{
           padding: '12px 16px',
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
-          gap: '12px',
-          background: '#000000',
-          border: '1px solid rgba(44, 52, 128, 0.4)',
+          gap: '14px',
+          background: 'var(--surface-container-low)',
+          border: '1px solid var(--border-tactical)',
+          borderRadius: 'var(--radius-md)',
         }}
       >
         <div style={{ position: 'relative', flex: 1, minWidth: '240px' }}>
-          <Search size={15} className="search-icon" color="#ffffff" />
+          <span
+            className="material-symbols-outlined"
+            style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '16px', color: 'var(--outline)' }}
+          >
+            search
+          </span>
           <input
             type="text"
             className="search-input"
             placeholder="Search by ID, title, street, or condition..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
+            style={{ paddingLeft: '34px' }}
           />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '11px', color: '#d1d5db', fontWeight: 700 }}>SEVERITY:</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontFamily: 'var(--font-telemetry)', fontSize: '11px', color: 'var(--outline)', fontWeight: 700 }}>
+            SEVERITY:
+          </span>
           {['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((sev) => (
             <button
               key={sev}
-              className={`filter-chip ${severityFilter === sev ? 'active' : ''}`}
+              type="button"
+              className={`layer-toggle-btn ${severityFilter === sev ? 'active' : ''}`}
               onClick={() => setSeverityFilter(sev)}
-              style={
-                severityFilter === sev
-                  ? { background: '#2C3480', color: '#ffffff', borderColor: '#ffffff', fontWeight: 800 }
-                  : { background: 'rgba(44, 52, 128, 0.15)', color: '#cbd5e1' }
-              }
             >
               {sev}
             </button>
           ))}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '11px', color: '#d1d5db', fontWeight: 700 }}>STATUS:</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontFamily: 'var(--font-telemetry)', fontSize: '11px', color: 'var(--outline)', fontWeight: 700 }}>
+            STATUS:
+          </span>
           {['ALL', 'REPORTED', 'DISPATCHED', 'EN_ROUTE', 'ON_SCENE', 'RESOLVED'].map((st) => (
             <button
               key={st}
-              className={`filter-chip ${statusFilter === st ? 'active' : ''}`}
+              type="button"
+              className={`layer-toggle-btn ${statusFilter === st ? 'active' : ''}`}
               onClick={() => setStatusFilter(st)}
-              style={
-                statusFilter === st
-                  ? { background: '#2C3480', color: '#ffffff', borderColor: '#ffffff', fontWeight: 800 }
-                  : { background: 'rgba(44, 52, 128, 0.15)', color: '#cbd5e1' }
-              }
             >
               {st}
             </button>
@@ -159,22 +151,30 @@ export default function LiveIncidentsView({
       </div>
 
       {/* Incidents Table */}
-      <div className="glass-panel" style={{ overflow: 'hidden', background: '#000000', border: '1px solid #2C3480' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
+      <div
+        style={{
+          background: 'var(--surface-container-low)',
+          border: '1px solid var(--border-tactical)',
+          borderRadius: 'var(--radius-md)',
+          overflow: 'hidden',
+          boxShadow: 'var(--shadow-tactical)',
+        }}
+      >
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12.5px' }}>
           <thead>
             <tr
               style={{
-                borderBottom: '1px solid rgba(44, 52, 128, 0.6)',
-                background: '#2C3480',
-                color: '#ffffff',
-                fontFamily: 'var(--font-mono)',
+                borderBottom: '1px solid var(--border-tactical)',
+                background: 'var(--surface-container-highest)',
+                color: 'var(--on-surface-bright)',
+                fontFamily: 'var(--font-telemetry)',
                 fontSize: '11px',
-                fontWeight: 800,
+                fontWeight: 700,
               }}
             >
               <th style={{ padding: '12px 16px' }}>INCIDENT ID</th>
               <th style={{ padding: '12px 16px' }}>SEVERITY</th>
-              <th style={{ padding: '12px 16px' }}>TITLE & CATEGORY</th>
+              <th style={{ padding: '12px 16px' }}>TITLE &amp; CATEGORY</th>
               <th style={{ padding: '12px 16px' }}>LOCATION</th>
               <th style={{ padding: '12px 16px' }}>STATUS</th>
               <th style={{ padding: '12px 16px' }}>ASSIGNED UNIT</th>
@@ -185,8 +185,8 @@ export default function LiveIncidentsView({
           <tbody>
             {filteredIncidents.length === 0 ? (
               <tr>
-                <td colSpan="8" style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
-                  No original emergency incidents matching criteria.
+                <td colSpan="8" style={{ padding: '40px', textAlign: 'center', color: 'var(--outline)' }}>
+                  No emergency incidents matching criteria.
                 </td>
               </tr>
             ) : (
@@ -194,56 +194,83 @@ export default function LiveIncidentsView({
                 <tr
                   key={inc.incidentId}
                   style={{
-                    borderBottom: '1px solid rgba(44, 52, 128, 0.25)',
+                    borderBottom: '1px solid rgba(30, 58, 95, 0.4)',
                     cursor: 'pointer',
                     transition: 'background 0.15s ease',
                   }}
-                  className="incident-table-row"
                   onClick={() => onSelectIncident(inc)}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-container)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                 >
-                  <td style={{ padding: '12px 16px', fontFamily: 'var(--font-mono)', color: '#ffffff', fontWeight: 800 }}>
+                  <td style={{ padding: '12px 16px', fontFamily: 'var(--font-telemetry)', color: 'var(--primary)', fontWeight: 700 }}>
                     {inc.incidentId}
                   </td>
                   <td style={{ padding: '12px 16px' }}>
-                    <span className={`severity-badge badge-${inc.severity}`}>
+                    <span className={`incident-severity-badge badge-${inc.severity === 'CRITICAL' ? 'crit' : inc.severity === 'HIGH' ? 'high' : inc.severity === 'MEDIUM' ? 'med' : 'low'}`}>
                       {inc.severity}
                     </span>
                   </td>
                   <td style={{ padding: '12px 16px' }}>
-                    <div style={{ fontWeight: 700, color: '#ffffff' }}>{inc.title}</div>
-                    <div style={{ fontSize: '10px', color: '#94a3b8' }}>{inc.category}</div>
+                    <div style={{ fontWeight: 600, color: 'var(--on-surface-bright)', fontFamily: 'var(--font-headline)' }}>
+                      {inc.title}
+                    </div>
+                    <div style={{ fontSize: '10.5px', color: 'var(--outline)' }}>
+                      {inc.category}
+                    </div>
                   </td>
-                  <td style={{ padding: '12px 16px', color: '#cbd5e1' }}>
+                  <td style={{ padding: '12px 16px', color: 'var(--on-surface)' }}>
                     {inc.location?.address}
                   </td>
                   <td style={{ padding: '12px 16px' }}>
-                    <span className="status-badge" style={{ background: '#2C3480', color: '#ffffff', borderColor: '#ffffff' }}>
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-telemetry)',
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        padding: '2px 6px',
+                        borderRadius: '3px',
+                        background: 'var(--surface-container-high)',
+                        color: 'var(--on-surface-bright)',
+                        border: '1px solid var(--border-tactical)',
+                      }}
+                    >
                       {inc.status}
                     </span>
                   </td>
                   <td style={{ padding: '12px 16px' }}>
                     {inc.assignedAmbulanceCallsign ? (
-                      <span style={{ color: '#ffffff', fontWeight: 700, background: '#2C3480', padding: '2px 8px', borderRadius: '4px' }}>
+                      <span
+                        style={{
+                          color: 'var(--primary)',
+                          fontFamily: 'var(--font-telemetry)',
+                          fontWeight: 700,
+                          background: 'rgba(0, 212, 255, 0.12)',
+                          border: '1px solid var(--primary)',
+                          padding: '2px 7px',
+                          borderRadius: '3px',
+                        }}
+                      >
                         🚑 {inc.assignedAmbulanceCallsign}
                       </span>
                     ) : (
-                      <span style={{ color: '#ef4444', fontStyle: 'italic', fontWeight: 600 }}>Unassigned</span>
+                      <span style={{ color: 'var(--error)', fontStyle: 'italic', fontWeight: 600 }}>Unassigned</span>
                     )}
                   </td>
-                  <td style={{ padding: '12px 16px', color: '#94a3b8', fontFamily: 'var(--font-mono)' }}>
-                    {new Date(inc.timestamps?.reportedAt || inc.createdAt).toLocaleTimeString()}
+                  <td style={{ padding: '12px 16px', color: 'var(--outline)', fontFamily: 'var(--font-telemetry)' }}>
+                    {new Date(inc.timestamps?.reportedAt || inc.createdAt || Date.now()).toLocaleTimeString()}
                   </td>
                   <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                     <button
-                      className="btn-outline"
-                      style={{ padding: '4px 12px', fontSize: '11px', background: '#2C3480', borderColor: '#ffffff', color: '#ffffff' }}
+                      type="button"
+                      className="btn-hud-tactical btn-hud-primary"
+                      style={{ display: 'inline-flex', padding: '4px 10px', fontSize: '11px' }}
                       onClick={(e) => {
                         e.stopPropagation();
                         onSelectIncident(inc);
                       }}
                     >
                       <span>Dispatch</span>
-                      <ChevronRight size={13} color="#ffffff" />
+                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>arrow_forward</span>
                     </button>
                   </td>
                 </tr>

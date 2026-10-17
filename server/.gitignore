@@ -1,3 +1,9 @@
 node_modules/
 .env
+.env.*
+.env.local
+!.env.example
 *.log
+credentials.json
+*.pem
+*.key

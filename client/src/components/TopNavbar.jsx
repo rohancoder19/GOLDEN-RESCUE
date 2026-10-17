@@ -1,16 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Search,
-  Volume2,
-  VolumeX,
-  Bell,
-  Sparkles,
-  PlusCircle,
-  Activity,
-  CheckCircle2,
-  ShieldCheck,
-  Filter,
-} from 'lucide-react';
 import { toggleAudioMute, getAudioMuted, playTelemetryChirp } from '../services/audio';
 
 export default function TopNavbar({
@@ -39,165 +27,160 @@ export default function TopNavbar({
     if (!next) playTelemetryChirp();
   };
 
-  const recentAlerts = incidents.slice(0, 5);
+  const criticalCount = incidents.filter(
+    (i) => i.severity === 'CRITICAL' && (i.status === 'REPORTED' || i.status === 'TRIAGED' || i.status === 'ON_SCENE')
+  ).length;
+
+  const zuluTimeStr = `${currentTime.getUTCHours().toString().padStart(2, '0')}:${currentTime.getUTCMinutes().toString().padStart(2, '0')}:${currentTime.getUTCSeconds().toString().padStart(2, '0')} UTC`;
+  const localTimeStr = currentTime.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' EST';
 
   return (
-    <header className="top-navbar" style={{ background: '#000000', borderBottom: '1px solid rgba(44, 52, 128, 0.4)' }}>
-      {/* Search Input */}
-      <div className="search-box-wrapper">
-        <Search size={16} className="search-icon" color="#ffffff" />
-        <input
-          type="text"
-          className="search-input"
-          placeholder="Search original incidents, fleet, hospitals..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{ background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
-        />
-      </div>
-
-      {/* Center Live Telemetry Clock */}
-      <div className="time-hud-display">
-        <div className="time-local" style={{ color: '#ffffff' }}>
-          {currentTime.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-          <span style={{ fontSize: '10px', color: '#5866db', marginLeft: '6px', fontWeight: 800 }}>LIVE</span>
-        </div>
-        <div className="time-utc" style={{ color: '#94a3b8' }}>
-          {currentTime.toUTCString().slice(17, 25)} UTC • {currentTime.toISOString().slice(0, 10)}
+    <header className="top-navbar">
+      {/* Search Input Box with Ctrl+K shortcut */}
+      <div className="top-navbar-left">
+        <div className="search-box-wrapper">
+          <span className="material-symbols-outlined search-icon">search</span>
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Search active incidents, triage tags, units..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <kbd className="search-kbd">Ctrl+K</kbd>
         </div>
       </div>
 
-      {/* Actions & Operator Profile Cluster */}
-      <div className="top-actions-cluster">
-        {/* Toggle Original Datas Only */}
-        <button
-          className="demo-mode-pill"
-          onClick={toggleShowOriginalOnly}
-          title={showOriginalOnly ? 'Showing original authentic data only (click to include simulated)' : 'Showing all data (click to filter original only)'}
-          style={{
-            background: showOriginalOnly ? '#2C3480' : 'rgba(44, 52, 128, 0.2)',
-            borderColor: showOriginalOnly ? '#ffffff' : 'rgba(44, 52, 128, 0.6)',
-            color: '#ffffff',
-            boxShadow: showOriginalOnly ? '0 0 10px rgba(44, 52, 128, 0.7)' : 'none',
-          }}
-        >
-          <ShieldCheck size={14} color="#ffffff" />
-          <span>{showOriginalOnly ? 'ORIGINAL DATA ONLY' : 'ALL DATA (INC. SIM)'}</span>
-        </button>
+      {/* Right Telemetry Controls */}
+      <div className="top-navbar-right">
+        {/* Dual Clocks: ZULU & LOCAL */}
+        <div className="dual-clock-cluster">
+          <div className="clock-item" style={{ textAlign: 'right' }}>
+            <span className="clock-label">ZULU / UTC</span>
+            <span className="clock-val" style={{ color: 'var(--primary)' }}>
+              {zuluTimeStr}
+            </span>
+          </div>
+          <div className="clock-divider"></div>
+          <div className="clock-item">
+            <span className="clock-label">LOCAL (HQ)</span>
+            <span className="clock-val" style={{ color: 'var(--secondary)' }}>
+              {localTimeStr}
+            </span>
+          </div>
+        </div>
 
-        {/* Quick Report Emergency Button */}
+        {/* Live Simulation / Ready Badge with Ping Dot */}
         <button
-          className="btn-dispatch"
+          type="button"
+          className="live-badge-pill"
           onClick={() => {
             playTelemetryChirp();
-            onOpenNewIncident();
+            toggleDemoMode();
           }}
-          style={{ padding: '6px 14px', fontSize: '12px', background: '#2C3480', border: '1px solid #ffffff' }}
+          title="Click to toggle Real-time Simulation Engine"
+          style={{ cursor: 'pointer', background: 'var(--surface-container-low)' }}
         >
-          <PlusCircle size={15} color="#ffffff" />
-          <span style={{ color: '#ffffff', fontWeight: 800 }}>+ New Incident</span>
+          <span className="live-beacon-dot">
+            <span className="ping-corona"></span>
+            <span className="solid-core"></span>
+          </span>
+          <span
+            style={{
+              fontFamily: 'var(--font-telemetry)',
+              fontSize: '11px',
+              fontWeight: 700,
+              color: 'var(--primary)',
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+            }}
+          >
+            {isDemoMode ? 'LIVE SIMULATION / STREAMING' : 'LIVE SIMULATION / READY'}
+          </span>
         </button>
 
-        {/* Sound Toggle */}
+        {/* Sound Toggle Button */}
         <button
-          className="icon-btn-utility"
+          type="button"
+          className="icon-btn-tactical"
           onClick={handleMuteToggle}
-          title={muted ? 'Unmute Audio HUD' : 'Mute Audio HUD'}
-          style={{ background: '#000000', border: '1px solid #2C3480' }}
+          title={muted ? 'Unmute Emergency Audio' : 'Mute Emergency Audio'}
         >
-          {muted ? <VolumeX size={16} color="#ef4444" /> : <Volume2 size={16} color="#ffffff" />}
+          <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+            {muted ? 'volume_off' : 'volume_up'}
+          </span>
         </button>
 
-        {/* Notification Bell */}
+        {/* Emergency Notification Bell */}
         <div style={{ position: 'relative' }}>
           <button
-            className="icon-btn-utility"
+            type="button"
+            className="icon-btn-tactical"
             onClick={() => {
               playTelemetryChirp();
               setShowNotifications(!showNotifications);
             }}
-            title="Dispatch Broadcast Notifications"
-            style={{ background: '#000000', border: '1px solid #2C3480' }}
+            title="Emergency Priority Notifications"
           >
-            <Bell size={16} color="#ffffff" />
-            {recentAlerts.some((i) => i.severity === 'CRITICAL') && (
-              <span
-                style={{
-                  position: 'absolute',
-                  top: '6px',
-                  right: '6px',
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  background: 'var(--red-critical)',
-                  boxShadow: '0 0 6px var(--red-critical)',
-                }}
-              />
+            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+              notifications
+            </span>
+            {criticalCount > 0 && (
+              <span className="notification-count-badge">
+                {criticalCount}
+              </span>
             )}
           </button>
 
-          {/* Notifications Dropdown Drawer */}
+          {/* Quick Notification Dropdown */}
           {showNotifications && (
             <div
-              className="glass-panel"
               style={{
                 position: 'absolute',
                 top: '46px',
                 right: '0',
                 width: '320px',
-                maxHeight: '380px',
-                overflowY: 'auto',
+                background: 'var(--surface-container-low)',
+                border: '1px solid var(--border-tactical)',
+                borderRadius: 'var(--radius-md)',
+                boxShadow: 'var(--shadow-tactical), var(--glow-cyan)',
+                zIndex: 1000,
                 padding: '12px',
-                zIndex: 100,
-                boxShadow: 'var(--shadow-lg)',
-                border: '1px solid #2C3480',
-                background: '#000000',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
               }}
             >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  borderBottom: '1px solid rgba(44, 52, 128, 0.4)',
-                  paddingBottom: '8px',
-                  marginBottom: '10px',
-                }}
-              >
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff' }}>LIVE DISPATCH ALERTS</span>
-                <span style={{ fontSize: '10px', color: '#5866db', fontFamily: 'var(--font-mono)' }}>
-                  ACTIVE FEED
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-tactical)', paddingBottom: '6px' }}>
+                <span style={{ fontFamily: 'var(--font-headline)', fontSize: '13px', fontWeight: 600, color: 'var(--on-surface-bright)' }}>
+                  Active Priority Alerts
+                </span>
+                <span style={{ fontFamily: 'var(--font-telemetry)', fontSize: '10px', color: 'var(--primary)' }}>
+                  {criticalCount} CRITICAL
                 </span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {recentAlerts.map((alert) => (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '240px', overflowY: 'auto' }}>
+                {incidents.slice(0, 5).map((inc) => (
                   <div
-                    key={alert.incidentId}
+                    key={inc.incidentId}
                     onClick={() => {
+                      if (onSelectIncident) onSelectIncident(inc);
                       setShowNotifications(false);
-                      onSelectIncident(alert);
                     }}
                     style={{
+                      background: 'var(--surface-container-lowest)',
                       padding: '8px',
-                      borderRadius: '6px',
-                      background: 'rgba(44, 52, 128, 0.15)',
-                      border: '1px solid rgba(44, 52, 128, 0.4)',
+                      borderRadius: '4px',
                       cursor: 'pointer',
+                      borderLeft: `3px solid ${inc.severity === 'CRITICAL' ? 'var(--error)' : 'var(--secondary)'}`,
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: '#ffffff', fontWeight: 700 }}>
-                        {alert.incidentId}
-                      </span>
-                      <span className={`severity-badge badge-${alert.severity}`} style={{ fontSize: '9px' }}>
-                        {alert.severity}
-                      </span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontFamily: 'var(--font-telemetry)' }}>
+                      <span style={{ fontWeight: 700, color: 'var(--on-surface-bright)' }}>{inc.incidentId}</span>
+                      <span style={{ color: inc.severity === 'CRITICAL' ? 'var(--error)' : 'var(--secondary)' }}>{inc.severity}</span>
                     </div>
-                    <div style={{ fontSize: '12px', fontWeight: 600, marginTop: '4px', color: '#ffffff' }}>
-                      {alert.title}
-                    </div>
-                    <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>
-                      {alert.location?.address}
+                    <div style={{ fontSize: '12px', color: 'var(--on-surface-bright)', marginTop: '2px', fontWeight: 500 }}>
+                      {inc.title}
                     </div>
                   </div>
                 ))}
@@ -206,14 +189,19 @@ export default function TopNavbar({
           )}
         </div>
 
-        {/* Operator Profile */}
-        <div className="operator-pill" style={{ background: 'rgba(44, 52, 128, 0.25)', border: '1px solid #2C3480' }}>
-          <div className="operator-avatar" style={{ background: '#2C3480', border: '1px solid #ffffff' }}>
-            D7
+        {/* Dispatch Supervisor Profile */}
+        <div className="supervisor-profile-chip">
+          <div className="avatar-wrapper">
+            <img
+              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces"
+              alt="Dispatch Supervisor Cmdr. S. Thompson"
+              className="avatar-img"
+            />
+            <span className="avatar-status-dot"></span>
           </div>
-          <div className="operator-meta">
-            <span className="operator-name" style={{ color: '#ffffff' }}>Delta-7</span>
-            <span className="operator-role" style={{ color: '#d1d5db' }}>L3 DISPATCHER</span>
+          <div className="supervisor-meta">
+            <span className="supervisor-name">Cmdr. S. Thompson</span>
+            <span className="supervisor-role">Dispatch Supervisor</span>
           </div>
         </div>
       </div>

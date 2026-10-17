@@ -1,16 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import {
-  X,
-  Mic,
-  MicOff,
-  Sparkles,
-  Send,
-  AlertTriangle,
-  MapPin,
-  FileText,
-  User,
-  Radio,
-} from 'lucide-react';
 import { api } from '../services/api';
 import { playVoiceRecordChirp, playTelemetryChirp, playAlertSiren } from '../services/audio';
 
@@ -144,22 +132,24 @@ export default function NewIncidentModal({ onClose, onIncidentCreated }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ background: 'rgba(0, 0, 0, 0.92)' }}>
+    <div className="modal-overlay" onClick={onClose}>
       <div
         className="modal-content-card"
-        style={{ maxWidth: '640px', background: '#000000', border: '2px solid #2C3480', boxShadow: '0 0 30px rgba(44, 52, 128, 0.7)' }}
+        style={{ maxWidth: '640px' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="modal-header" style={{ background: '#000000', borderBottom: '1px solid rgba(44, 52, 128, 0.6)' }}>
+        <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Radio size={18} color="#ffffff" />
-            <span style={{ fontSize: '14px', fontWeight: 800, color: '#ffffff' }}>
-              REGISTER NEW EMERGENCY INCIDENT (ORIGINAL RECORD)
+            <span className="material-symbols-outlined" style={{ color: 'var(--secondary)', fontSize: '20px' }}>
+              campaign
+            </span>
+            <span style={{ fontFamily: 'var(--font-headline)', fontSize: '15px', fontWeight: 700, color: 'var(--on-surface-bright)' }}>
+              REGISTER NEW EMERGENCY INCIDENT
             </span>
           </div>
-          <button className="icon-btn-utility" onClick={onClose} style={{ background: '#000000', border: '1px solid #2C3480' }}>
-            <X size={16} color="#ffffff" />
+          <button type="button" className="icon-btn-tactical" onClick={onClose}>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
           </button>
         </div>
 
@@ -167,224 +157,227 @@ export default function NewIncidentModal({ onClose, onIncidentCreated }) {
         <div
           style={{
             display: 'flex',
-            borderBottom: '1px solid rgba(44, 52, 128, 0.5)',
-            background: 'rgba(44, 52, 128, 0.15)',
-            padding: '0 20px',
+            borderBottom: '1px solid var(--border-tactical)',
+            background: 'var(--surface-container-low)',
+            padding: '0 16px',
+            gap: '6px',
           }}
         >
           <button
-            className={`nav-item ${activeTab === 'manual' ? 'active' : ''}`}
-            style={{
-              width: 'auto',
-              borderRadius: '0',
-              borderBottom: activeTab === 'manual' ? '2px solid #ffffff' : 'none',
-              background: activeTab === 'manual' ? '#2C3480' : 'transparent',
-              color: '#ffffff',
-              fontWeight: 700,
-            }}
+            type="button"
+            className={`layer-toggle-btn ${activeTab === 'manual' ? 'active' : ''}`}
+            style={{ borderRadius: '0', borderBottom: activeTab === 'manual' ? '2px solid var(--primary)' : 'none', padding: '8px 14px' }}
             onClick={() => setActiveTab('manual')}
           >
             Manual Operator Input
           </button>
           <button
-            className={`nav-item ${activeTab === 'voice' ? 'active' : ''}`}
-            style={{
-              width: 'auto',
-              borderRadius: '0',
-              borderBottom: activeTab === 'voice' ? '2px solid #ffffff' : 'none',
-              background: activeTab === 'voice' ? '#2C3480' : 'transparent',
-              color: '#ffffff',
-              fontWeight: 700,
-            }}
+            type="button"
+            className={`layer-toggle-btn ${activeTab === 'voice' ? 'active' : ''}`}
+            style={{ borderRadius: '0', borderBottom: activeTab === 'voice' ? '2px solid var(--primary)' : 'none', padding: '8px 14px' }}
             onClick={() => setActiveTab('voice')}
           >
-            <Sparkles size={14} color="#ffffff" />
+            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>mic</span>
             <span>Voice-to-Dispatch AI</span>
           </button>
         </div>
 
         {/* Body */}
-        <div className="modal-body" style={{ background: '#000000' }}>
+        <div className="modal-body">
           {errorMessage && (
             <div
               style={{
                 padding: '10px 14px',
-                borderRadius: '6px',
-                background: 'rgba(239, 68, 68, 0.2)',
-                border: '1px solid #ef4444',
-                color: '#ffffff',
+                borderRadius: '4px',
+                background: 'rgba(255, 77, 90, 0.2)',
+                border: '1px solid var(--error)',
+                color: 'var(--error-light)',
                 fontSize: '12px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
               }}
             >
-              <AlertTriangle size={15} color="#ef4444" />
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>warning</span>
               <span>{errorMessage}</span>
             </div>
           )}
 
           {activeTab === 'voice' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', padding: '10px 0' }}>
-              <button
-                onClick={toggleRecording}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div
                 style={{
-                  width: '74px',
-                  height: '74px',
-                  borderRadius: '50%',
-                  background: isRecording ? 'rgba(239, 68, 68, 0.3)' : '#2C3480',
-                  border: isRecording ? '2px solid #ef4444' : '2px solid #ffffff',
-                  boxShadow: isRecording ? '0 0 25px rgba(239, 68, 68, 0.7)' : '0 0 15px rgba(44, 52, 128, 0.8)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
+                  padding: '14px',
+                  background: 'var(--surface-container-lowest)',
+                  border: '1px solid var(--border-tactical)',
+                  borderRadius: 'var(--radius-sm)',
                 }}
               >
-                {isRecording ? <MicOff size={32} color="#ffffff" /> : <Mic size={32} color="#ffffff" />}
-              </button>
-
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>
-                  {isRecording ? 'Listening for Emergency Voice Audio...' : 'Click to Speak 911 Call or Enter Audio Transcript'}
+                <div style={{ fontFamily: 'var(--font-headline)', fontSize: '13px', fontWeight: 700, color: 'var(--primary)', marginBottom: '3px' }}>
+                  GOOGLE GEMINI VOICE-TO-DISPATCH EXTRACTION
                 </div>
-                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
-                  Web Speech API + Google Gemini 2.5 Flash Clinical Extraction
-                </div>
+                <p style={{ fontSize: '12px', color: 'var(--on-surface)' }}>
+                  Speak natural emergency dispatch transcript or paste 911 dispatch audio log. Gemini extracts location, severity, and mechanism of injury automatically.
+                </p>
               </div>
 
-              <textarea
-                className="form-textarea"
-                style={{ width: '100%', minHeight: '100px', background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
-                placeholder="Or type/paste 911 call audio transcript: e.g. 'We have a two-car collision at 4th and King St, one driver unconscious...'"
-                value={transcript}
-                onChange={(e) => setTranscript(e.target.value)}
-              />
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className={isRecording ? 'btn-command-eas' : 'btn-hud-tactical btn-hud-primary'}
+                  onClick={toggleRecording}
+                  style={{ padding: '8px 14px' }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                    {isRecording ? 'mic_off' : 'mic'}
+                  </span>
+                  <span>{isRecording ? 'Stop Recording' : 'Start Microphone'}</span>
+                </button>
+                {isRecording && (
+                  <span style={{ fontSize: '11px', color: 'var(--error)', fontFamily: 'var(--font-telemetry)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span className="live-beacon-dot" style={{ width: '6px', height: '6px' }}>
+                      <span className="ping-corona" style={{ background: 'var(--error)' }}></span>
+                      <span className="solid-core" style={{ background: 'var(--error)', width: '6px', height: '6px' }}></span>
+                    </span>
+                    LISTENING...
+                  </span>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">AUDIO TRANSCRIPT / DISPATCH CALL LOG:</label>
+                <textarea
+                  className="form-textarea"
+                  rows="4"
+                  placeholder="e.g. 911 dispatch, caller reporting multi-car rollover crash on Downtown Expressway mile marker 14. 4 occupants injured, engine compartment smoking."
+                  value={transcript}
+                  onChange={(e) => setTranscript(e.target.value)}
+                />
+              </div>
 
               <button
-                className="btn-dispatch"
+                type="button"
+                className="btn-command-gold"
                 onClick={handleParseVoice}
-                disabled={isAiParsing || !transcript.trim()}
-                style={{ width: '100%', justifyContent: 'center', background: '#2C3480', border: '1px solid #ffffff', color: '#ffffff' }}
+                disabled={isAiParsing}
+                style={{ justifyContent: 'center' }}
               >
-                <Sparkles size={16} color="#ffffff" />
-                <span>{isAiParsing ? 'AI PARSING TRANSCRIPT WITH GEMINI...' : 'EXTRACT INCIDENT DATA WITH GEMINI'}</span>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>psychology</span>
+                <span>{isAiParsing ? 'PARSING WITH GEMINI 2.5 FLASH...' : 'PARSE WITH GEMINI AI & FILL FORM'}</span>
               </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div className="form-group">
-                <label className="form-label" style={{ color: '#ffffff' }}>INCIDENT TITLE:</label>
+                <label className="form-label">INCIDENT TITLE *</label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="e.g. Multi-Vehicle Collision with Rollover"
+                  placeholder="e.g. Multi-Vehicle Collision & Fire"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  style={{ background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
                   required
                 />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div className="form-group">
-                  <label className="form-label" style={{ color: '#ffffff' }}>CATEGORY:</label>
+                  <label className="form-label">CATEGORY</label>
                   <select
                     className="form-select"
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    style={{ background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
                   >
                     <option value="TRAFFIC_COLLISION">Traffic Collision</option>
                     <option value="CARDIAC_ARREST">Cardiac Arrest</option>
+                    <option value="INDUSTRIAL_FIRE">Industrial Fire / Hazmat</option>
                     <option value="STROKE_NEURO">Stroke / Neurological</option>
                     <option value="RESPIRATORY_DISTRESS">Respiratory Distress</option>
-                    <option value="INDUSTRIAL_FIRE">Industrial Fire</option>
-                    <option value="HAZMAT_EXPOSURE">Hazmat Exposure</option>
-                    <option value="PEDIATRIC_TRAUMA">Pediatric Trauma</option>
-                    <option value="FALL_INJURY">Fall Injury</option>
-                    <option value="OTHER">Other Emergency</option>
+                    <option value="TRAUMA_FALL">Trauma / Fall</option>
+                    <option value="MASS_CASUALTY">Mass Casualty Incident (MCI)</option>
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" style={{ color: '#ffffff' }}>SOURCE CHANNEL:</label>
+                  <label className="form-label">REPORTING CHANNEL</label>
                   <select
                     className="form-select"
                     value={source}
                     onChange={(e) => setSource(e.target.value)}
-                    style={{ background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
                   >
-                    <option value="OPERATOR_MANUAL">Operator Manual Entry</option>
-                    <option value="911_VOICE">911 Voice Call</option>
-                    <option value="CITIZEN_MOBILE">Citizen SOS Beacon</option>
-                    <option value="CCTV_AI">CCTV AI Vision Stream</option>
-                    <option value="IOT_SENSOR">IoT Infrastructure Sensor</option>
-                    <option value="VOICE_REPORT">Voice Speech-to-Dispatch</option>
+                    <option value="OPERATOR_MANUAL">Operator Console</option>
+                    <option value="VOICE_911">911 Voice Call</option>
+                    <option value="CCTV_AI">Smart City CCTV AI</option>
+                    <option value="IOT_SENSOR">IoT Crash Sensor</option>
                   </select>
                 </div>
               </div>
 
               <div className="form-group">
-                <label className="form-label" style={{ color: '#ffffff' }}>INCIDENT DESCRIPTION & CLINICAL DETAILS:</label>
+                <label className="form-label">DETAILED CLINICAL DESCRIPTION *</label>
                 <textarea
                   className="form-textarea"
-                  placeholder="Detail injuries, entrapment, airway status, conscious state, hazards..."
+                  placeholder="Describe number of victims, trap status, conscious state, bleeding, or hazards..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  style={{ background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
                   required
                 />
               </div>
 
               <div className="form-group">
-                <label className="form-label" style={{ color: '#ffffff' }}>LOCATION ADDRESS / CROSS STREET:</label>
+                <label className="form-label">INCIDENT LOCATION / ADDRESS *</label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="e.g. 550 Howard St & 2nd St, San Francisco"
+                  placeholder="e.g. Downtown Expressway (Mile 14.2)"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  style={{ background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
                   required
                 />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div className="form-group">
-                  <label className="form-label" style={{ color: '#ffffff' }}>CALLER NAME:</label>
+                  <label className="form-label">CALLER / REPORTING AGENT</label>
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="e.g. Officer Daniel Miller"
+                    placeholder="e.g. Officer Miller / Automated Feed"
                     value={callerName}
                     onChange={(e) => setCallerName(e.target.value)}
-                    style={{ background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
                   />
                 </div>
+
                 <div className="form-group">
-                  <label className="form-label" style={{ color: '#ffffff' }}>CALLBACK PHONE:</label>
+                  <label className="form-label">CALLBACK PHONE</label>
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="e.g. +1 (415) 555-0199"
+                    placeholder="+1 (415) 555-0199"
                     value={callerPhone}
                     onChange={(e) => setCallerPhone(e.target.value)}
-                    style={{ background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
                   />
                 </div>
               </div>
 
-              <button
-                type="submit"
-                className="btn-dispatch"
-                disabled={isSubmitting}
-                style={{ justifyContent: 'center', padding: '12px', marginTop: '6px', background: '#2C3480', border: '1px solid #ffffff', color: '#ffffff' }}
-              >
-                <Send size={16} color="#ffffff" />
-                <span>{isSubmitting ? 'TRIGGERING AI PIPELINE & SAVING...' : 'REGISTER ORIGINAL INCIDENT & INITIATE AI TRIAGE'}</span>
-              </button>
+              <div className="modal-footer" style={{ padding: '12px 0 0 0', background: 'transparent' }}>
+                <button
+                  type="button"
+                  className="btn-hud-tactical"
+                  onClick={onClose}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-command-gold"
+                  disabled={isSubmitting}
+                  style={{ width: 'auto', padding: '8px 20px' }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>send</span>
+                  <span>{isSubmitting ? 'DISPATCHING...' : 'REGISTER & RUN AI TRIAGE'}</span>
+                </button>
+              </div>
             </form>
           )}
         </div>

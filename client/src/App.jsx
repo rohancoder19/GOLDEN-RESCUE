@@ -228,6 +228,7 @@ export default function App() {
           setView(v);
         }}
         incidents={visibleIncidents}
+        onOpenNewIncident={() => setIsNewIncidentOpen(true)}
       />
 
       {/* Main Workspace Layout */}
@@ -258,6 +259,10 @@ export default function App() {
             selectedIncident={selectedIncident}
             onSelectIncident={(inc) => setSelectedIncident(inc)}
             onOpenNewIncident={() => setIsNewIncidentOpen(true)}
+            onNavigateView={(v) => {
+              playTelemetryChirp();
+              setView(v);
+            }}
           />
         )}
 

@@ -1,113 +1,92 @@
 import React from 'react';
-import {
-  LayoutDashboard,
-  AlertTriangle,
-  MapPin,
-  Ambulance as AmbulanceIcon,
-  Building2,
-  Cpu,
-  BarChart3,
-  Settings,
-  ShieldCheck,
-  Radio,
-} from 'lucide-react';
 
-export default function Sidebar({ currentView, setView, incidents = [] }) {
+export default function Sidebar({ currentView, setView, incidents = [], onOpenNewIncident }) {
   const criticalCount = incidents.filter(
-    (i) => i.severity === 'CRITICAL' && (i.status === 'REPORTED' || i.status === 'TRIAGED')
+    (i) => i.severity === 'CRITICAL' && (i.status === 'REPORTED' || i.status === 'TRIAGED' || i.status === 'ON_SCENE' || i.status === 'DISPATCHED')
   ).length;
 
   const navItems = [
-    { id: 'command-center', label: 'Command Center', icon: LayoutDashboard },
-    { id: 'incidents', label: 'Live Incidents', icon: AlertTriangle, badge: criticalCount },
-    { id: 'map', label: 'Emergency Map', icon: MapPin },
-    { id: 'fleet', label: 'Ambulance Fleet', icon: AmbulanceIcon },
-    { id: 'hospitals', label: 'Hospital Network', icon: Building2 },
-    { id: 'ai-decision', label: 'AI Decision Center', icon: Cpu, isNew: true },
-    { id: 'analytics', label: 'Analytics & Reports', icon: BarChart3 },
-    { id: 'settings', label: 'Settings & Audit', icon: Settings },
+    { id: 'command-center', label: 'Overview / Command Center', icon: 'grid_view' },
+    { id: 'incidents', label: 'Live Incidents', icon: 'warning', badge: criticalCount },
+    { id: 'map', label: 'Live Incident Map', icon: 'map' },
+    { id: 'ai-decision', label: 'Smart Dispatch Center', icon: 'send_time_extension' },
+    { id: 'hospitals', label: 'Hospital Network', icon: 'local_hospital' },
+    { id: 'fleet', label: 'Responder Tracking', icon: 'near_me' },
+    { id: 'emergency-reporting', label: 'Emergency Reporting', icon: 'assignment_late', isAction: true },
+    { id: 'analytics', label: 'Analytics & Reports', icon: 'monitoring' },
+    { id: 'multi-agent-ai', label: 'Multi-Agent AI Status', icon: 'smart_toy', viewTarget: 'ai-decision' },
   ];
 
+  const handleNavClick = (item) => {
+    if (item.isAction) {
+      if (onOpenNewIncident) onOpenNewIncident();
+      return;
+    }
+    const target = item.viewTarget || item.id;
+    setView(target);
+  };
+
   return (
-    <aside className="app-sidebar" style={{ background: '#000000', borderRight: '1px solid rgba(44, 52, 128, 0.4)' }}>
-      {/* Brand Identity */}
-      <div className="sidebar-brand" style={{ background: 'rgba(44, 52, 128, 0.15)', borderBottom: '1px solid rgba(44, 52, 128, 0.4)' }}>
-        <div
-          className="brand-icon-wrapper"
-          style={{ background: '#2C3480', border: '1px solid #ffffff', boxShadow: '0 0 12px rgba(44, 52, 128, 0.8)' }}
-        >
-          <ShieldCheck size={20} color="#ffffff" />
+    <aside className="app-sidebar">
+      <div className="sidebar-top">
+        {/* Brand Header */}
+        <div className="sidebar-brand">
+          <div className="brand-icon-wrapper">
+            <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>
+              local_hospital
+            </span>
+          </div>
+          <div className="brand-title">
+            <span className="brand-name">GOLDEN RESCUE</span>
+            <span className="brand-tagline">AI EMERGENCY OPS CENTER</span>
+          </div>
         </div>
-        <div className="brand-title">
-          <span style={{ color: '#ffffff' }}>GOLDEN RESCUE</span>
-          <span className="brand-tagline" style={{ color: '#d1d5db' }}>Every Second Matters</span>
+
+        {/* Section Label */}
+        <div className="sidebar-section-header">
+          Tactical Ops Matrix
         </div>
+
+        {/* Navigation List */}
+        <nav className="sidebar-nav">
+          {navItems.map((item) => {
+            const activeId = item.viewTarget || item.id;
+            const isActive = !item.isAction && currentView === activeId;
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`nav-item ${isActive ? 'active' : ''}`}
+                onClick={() => handleNavClick(item)}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                  {item.icon}
+                </span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {item.label}
+                </span>
+
+                {item.badge > 0 && (
+                  <span className="nav-badge" title={`${item.badge} Critical Incidents`}>
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
       </div>
 
-      {/* Navigation List */}
-      <nav className="sidebar-nav">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = currentView === item.id;
-          return (
-            <button
-              key={item.id}
-              className={`nav-item ${isActive ? 'active' : ''}`}
-              onClick={() => setView(item.id)}
-              style={
-                isActive
-                  ? { background: '#2C3480', borderColor: '#ffffff', color: '#ffffff', boxShadow: '0 0 14px rgba(44, 52, 128, 0.6)' }
-                  : { color: '#e2e8f0' }
-              }
-            >
-              <Icon size={18} color={isActive ? '#ffffff' : '#cbd5e1'} />
-              <span>{item.label}</span>
-              {item.badge > 0 && (
-                <span className="nav-badge" title="Critical Incidents Awaiting Dispatch">
-                  {item.badge}
-                </span>
-              )}
-              {item.isNew && (
-                <span
-                  style={{
-                    marginLeft: 'auto',
-                    fontSize: '9px',
-                    fontFamily: 'var(--font-mono)',
-                    color: '#ffffff',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    background: '#2C3480',
-                    border: '1px solid rgba(255, 255, 255, 0.3)',
-                    fontWeight: 700,
-                  }}
-                >
-                  AI CORE
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </nav>
-
       {/* Footer System Telemetry Status */}
-      <div className="sidebar-footer" style={{ background: '#000000', borderTop: '1px solid rgba(44, 52, 128, 0.4)' }}>
-        <div className="system-status-indicator">
-          <div className="pulse-dot" style={{ backgroundColor: '#2C3480', boxShadow: '0 0 8px #ffffff' }} />
-          <span style={{ color: '#ffffff', fontWeight: 700 }}>REAL-TIME ENGINE LIVE</span>
+      <div className="sidebar-footer">
+        <div className="telemetry-status-row">
+          <span style={{ color: 'var(--outline)', textTransform: 'uppercase' }}>Secure Link</span>
+          <span style={{ color: 'var(--secondary)', fontWeight: 600 }}>EMERG-BAND 04 (SECURE)</span>
         </div>
-        <div
-          style={{
-            fontSize: '10px',
-            color: '#94a3b8',
-            marginTop: '4px',
-            fontFamily: 'var(--font-mono)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '5px',
-          }}
-        >
-          <Radio size={10} color="#2C3480" />
-          <span>WS SYNC: 100% OPERATIONAL</span>
+        <div className="telemetry-status-row">
+          <span style={{ color: 'var(--outline)', textTransform: 'uppercase' }}>Telemetry</span>
+          <span style={{ color: 'var(--primary)', fontWeight: 600 }}>14ms | 99.98% Up</span>
         </div>
       </div>
     </aside>

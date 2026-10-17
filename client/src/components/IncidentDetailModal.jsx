@@ -1,21 +1,4 @@
 import React, { useState } from 'react';
-import {
-  X,
-  AlertTriangle,
-  Ambulance as AmbulanceIcon,
-  Building2,
-  Clock,
-  MapPin,
-  CheckCircle2,
-  Send,
-  ShieldAlert,
-  Cpu,
-  ChevronRight,
-  User,
-  Phone,
-  FileText,
-  Activity,
-} from 'lucide-react';
 import { api } from '../services/api';
 import { playAlertSiren, playTelemetryChirp } from '../services/audio';
 
@@ -79,7 +62,7 @@ export default function IncidentDetailModal({
       const res = await api.updateIncidentStatus(
         incident.incidentId,
         nextStatus,
-        `Status transitioned to ${nextStatus} by Operator Delta-7`
+        `Status transitioned to ${nextStatus} by Operator`
       );
       playTelemetryChirp();
       if (onIncidentUpdated) onIncidentUpdated(res.incident);
@@ -91,27 +74,41 @@ export default function IncidentDetailModal({
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ background: 'rgba(0, 0, 0, 0.92)' }}>
+    <div className="modal-overlay" onClick={onClose}>
       <div
         className="modal-content-card"
-        style={{ maxWidth: '780px', background: '#000000', border: '2px solid #2C3480', boxShadow: '0 0 30px rgba(44, 52, 128, 0.7)' }}
+        style={{ maxWidth: '780px' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="modal-header" style={{ background: '#000000', borderBottom: '1px solid rgba(44, 52, 128, 0.6)' }}>
+        <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: '#ffffff', fontWeight: 800 }}>
+            <span style={{ fontFamily: 'var(--font-telemetry)', fontSize: '13px', color: 'var(--primary)', fontWeight: 800 }}>
               {incident.incidentId}
             </span>
-            <span className={`severity-badge badge-${incident.severity}`}>
+            <span className={`incident-severity-badge badge-${incident.severity === 'CRITICAL' ? 'crit' : incident.severity === 'HIGH' ? 'high' : incident.severity === 'MEDIUM' ? 'med' : 'low'}`}>
               {incident.severity} PRIORITY ({incident.priorityScore || 50}/100)
             </span>
-            <span className="status-badge" style={{ background: '#2C3480', color: '#ffffff' }}>
+            <span
+              style={{
+                fontFamily: 'var(--font-telemetry)',
+                fontSize: '10.5px',
+                padding: '2px 6px',
+                borderRadius: '3px',
+                background: 'var(--surface-container-highest)',
+                color: 'var(--on-surface-bright)',
+                border: '1px solid var(--border-tactical)',
+              }}
+            >
               {incident.status}
             </span>
           </div>
-          <button className="icon-btn-utility" onClick={onClose} style={{ background: '#000000', border: '1px solid #2C3480' }}>
-            <X size={16} color="#ffffff" />
+          <button
+            type="button"
+            className="icon-btn-tactical"
+            onClick={onClose}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
           </button>
         </div>
 
@@ -119,122 +116,102 @@ export default function IncidentDetailModal({
         <div
           style={{
             display: 'flex',
-            borderBottom: '1px solid rgba(44, 52, 128, 0.5)',
-            background: 'rgba(44, 52, 128, 0.15)',
-            padding: '0 20px',
+            borderBottom: '1px solid var(--border-tactical)',
+            background: 'var(--surface-container-low)',
+            padding: '0 16px',
+            gap: '6px',
           }}
         >
-          <button
-            className={`nav-item ${activeTab === 'dispatch' ? 'active' : ''}`}
-            style={{
-              width: 'auto',
-              borderRadius: '0',
-              borderBottom: activeTab === 'dispatch' ? '2px solid #ffffff' : 'none',
-              background: activeTab === 'dispatch' ? '#2C3480' : 'transparent',
-              color: '#ffffff',
-              fontWeight: 700,
-            }}
-            onClick={() => setActiveTab('dispatch')}
-          >
-            Operational Dispatch
-          </button>
-          <button
-            className={`nav-item ${activeTab === 'ai-reasoning' ? 'active' : ''}`}
-            style={{
-              width: 'auto',
-              borderRadius: '0',
-              borderBottom: activeTab === 'ai-reasoning' ? '2px solid #ffffff' : 'none',
-              background: activeTab === 'ai-reasoning' ? '#2C3480' : 'transparent',
-              color: '#ffffff',
-              fontWeight: 700,
-            }}
-            onClick={() => setActiveTab('ai-reasoning')}
-          >
-            AI Clinical Reasoning ({incident.aiTriage?.confidence || 90}%)
-          </button>
-          <button
-            className={`nav-item ${activeTab === 'timeline' ? 'active' : ''}`}
-            style={{
-              width: 'auto',
-              borderRadius: '0',
-              borderBottom: activeTab === 'timeline' ? '2px solid #ffffff' : 'none',
-              background: activeTab === 'timeline' ? '#2C3480' : 'transparent',
-              color: '#ffffff',
-              fontWeight: 700,
-            }}
-            onClick={() => setActiveTab('timeline')}
-          >
-            Audit Trail ({incident.timeline?.length || 0})
-          </button>
+          {[
+            { id: 'dispatch', label: 'Operational Dispatch' },
+            { id: 'ai-reasoning', label: `AI Clinical Reasoning (${incident.aiTriage?.confidence || 90}%)` },
+            { id: 'timeline', label: `Audit Trail (${incident.timeline?.length || 0})` },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={`layer-toggle-btn ${activeTab === tab.id ? 'active' : ''}`}
+              style={{ borderRadius: '0', borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : 'none', padding: '8px 12px' }}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {/* Modal Body */}
-        <div className="modal-body" style={{ background: '#000000' }}>
+        <div className="modal-body">
           {errorMessage && (
             <div
               style={{
                 padding: '10px 14px',
-                borderRadius: '6px',
-                background: 'rgba(239, 68, 68, 0.2)',
-                border: '1px solid #ef4444',
-                color: '#ffffff',
+                borderRadius: '4px',
+                background: 'rgba(255, 77, 90, 0.2)',
+                border: '1px solid var(--error)',
+                color: 'var(--error-light)',
                 fontSize: '12px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
               }}
             >
-              <AlertTriangle size={15} color="#ef4444" />
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>warning</span>
               <span>{errorMessage}</span>
             </div>
           )}
 
           {/* Incident Overview Strip */}
           <div
-            className="glass-panel"
-            style={{ padding: '16px', background: 'rgba(44, 52, 128, 0.15)', border: '1px solid rgba(44, 52, 128, 0.5)', display: 'flex', flexDirection: 'column', gap: '8px' }}
+            style={{
+              padding: '14px',
+              background: 'var(--surface-container-lowest)',
+              border: '1px solid var(--border-tactical)',
+              borderRadius: 'var(--radius-sm)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+            }}
           >
-            <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>
+            <div style={{ fontFamily: 'var(--font-headline)', fontSize: '15px', fontWeight: 700, color: 'var(--on-surface-bright)' }}>
               {incident.title}
             </div>
-            <div style={{ fontSize: '12px', color: '#cbd5e1' }}>
+            <div style={{ fontSize: '12.5px', color: 'var(--on-surface)' }}>
               {incident.description}
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', marginTop: '6px', fontSize: '11px', color: '#94a3b8' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <MapPin size={13} color="#ffffff" />
-                <span style={{ color: '#ffffff' }}>{incident.location?.address}</span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', marginTop: '4px', fontSize: '11px', color: 'var(--outline)', fontFamily: 'var(--font-telemetry)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '14px', color: 'var(--secondary)' }}>pin_drop</span>
+                <span style={{ color: 'var(--on-surface-bright)' }}>{incident.location?.address}</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <User size={13} color="#cbd5e1" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>person</span>
                 <span>{incident.callerInfo?.name}</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <Phone size={13} color="#cbd5e1" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>phone</span>
                 <span>{incident.callerInfo?.phone}</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <Clock size={13} color="#cbd5e1" />
-                <span>Reported: {new Date(incident.timestamps?.reportedAt || incident.createdAt).toLocaleTimeString()}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>schedule</span>
+                <span>Reported: {new Date(incident.timestamps?.reportedAt || incident.createdAt || Date.now()).toLocaleTimeString()}</span>
               </div>
             </div>
           </div>
 
           {/* TAB 1: Dispatch Controls */}
           {activeTab === 'dispatch' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {incident.status === 'REPORTED' || incident.status === 'TRIAGED' ? (
                 <>
                   <div className="form-group">
-                    <label className="form-label" style={{ color: '#ffffff', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <AmbulanceIcon size={14} color="#ffffff" />
+                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '15px', color: 'var(--primary)' }}>airport_shuttle</span>
                       <span>SELECT AVAILABLE EMERGENCY UNIT (RANKED):</span>
                     </label>
                     <select
                       className="form-select"
                       value={selectedAmbulanceId}
                       onChange={(e) => setSelectedAmbulanceId(e.target.value)}
-                      style={{ background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
                     >
                       <option value="">-- Choose Unit --</option>
                       {availableAmbulances.map((amb) => (
@@ -246,15 +223,14 @@ export default function IncidentDetailModal({
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label" style={{ color: '#ffffff', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Building2 size={14} color="#ffffff" />
+                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '15px', color: 'var(--primary)' }}>local_hospital</span>
                       <span>RECOMMENDED RECEIVING HOSPITAL:</span>
                     </label>
                     <select
                       className="form-select"
                       value={selectedHospitalId}
                       onChange={(e) => setSelectedHospitalId(e.target.value)}
-                      style={{ background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
                     >
                       <option value="">-- Choose Hospital --</option>
                       {hospitals.map((hosp) => (
@@ -266,89 +242,94 @@ export default function IncidentDetailModal({
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label" style={{ color: '#ffffff' }}>OPERATOR DISPATCH ORDER / CLINICAL NOTES:</label>
+                    <label className="form-label">OPERATOR DISPATCH ORDER / CLINICAL NOTES:</label>
                     <textarea
                       className="form-textarea"
                       placeholder="e.g. Priority 1 response authorized. Trauma Bay pre-notified."
                       value={operatorNote}
                       onChange={(e) => setOperatorNote(e.target.value)}
-                      style={{ background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
                     />
                   </div>
 
                   <button
-                    className="btn-dispatch"
+                    type="button"
+                    className="btn-command-dispatch"
                     onClick={handleDispatch}
                     disabled={isSubmitting}
-                    style={{ justifyContent: 'center', padding: '12px', background: '#2C3480', border: '1px solid #ffffff', color: '#ffffff' }}
+                    style={{ padding: '10px', fontSize: '13px' }}
                   >
-                    <Send size={16} color="#ffffff" />
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>send</span>
                     <span>{isSubmitting ? 'TRANSMITTING DISPATCH...' : 'CONFIRM DISPATCH & NOTIFY UNIT'}</span>
                   </button>
                 </>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   <div
-                    className="glass-panel"
-                    style={{ padding: '16px', background: 'rgba(44, 52, 128, 0.2)', borderLeft: '4px solid #ffffff' }}
+                    style={{
+                      padding: '14px',
+                      background: 'var(--surface-container-lowest)',
+                      border: '1px solid var(--border-tactical)',
+                      borderLeft: '4px solid var(--primary)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontSize: '13px', fontWeight: 800, color: '#ffffff' }}>
+                      <div style={{ fontFamily: 'var(--font-headline)', fontSize: '14px', fontWeight: 700, color: 'var(--on-surface-bright)' }}>
                         ASSIGNED UNIT: {incident.assignedAmbulanceCallsign || incident.assignedAmbulanceId}
                       </div>
-                      <div style={{ fontFamily: 'var(--font-mono)', color: '#ffffff', fontSize: '12px', fontWeight: 800 }}>
+                      <div style={{ fontFamily: 'var(--font-telemetry)', color: 'var(--primary)', fontSize: '12px', fontWeight: 700 }}>
                         ETA: {incident.routeData?.etaMinutes || 4} MIN
                       </div>
                     </div>
-                    <div style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '4px' }}>
-                      Destination: {incident.recommendedHospitalName || incident.recommendedHospitalId || 'Metro General Institute'}
+                    <div style={{ fontSize: '11px', color: 'var(--outline)', marginTop: '4px' }}>
+                      Destination: {incident.recommendedHospitalName || incident.recommendedHospitalId || 'Metro Central Institute'}
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff' }}>
+                    <span style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--outline)', fontFamily: 'var(--font-telemetry)' }}>
                       ADVANCE INCIDENT LIFECYCLE:
                     </span>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                       {incident.status === 'DISPATCHED' && (
                         <button
-                          className="btn-primary"
+                          type="button"
+                          className="btn-hud-tactical btn-hud-primary"
                           onClick={() => handleStatusTransition('EN_ROUTE')}
                           disabled={isSubmitting}
-                          style={{ background: '#2C3480', border: '1px solid #ffffff', color: '#ffffff' }}
                         >
                           Mark Unit EN ROUTE
                         </button>
                       )}
                       {(incident.status === 'DISPATCHED' || incident.status === 'EN_ROUTE') && (
                         <button
-                          className="btn-primary"
+                          type="button"
+                          className="btn-hud-tactical btn-hud-primary"
                           onClick={() => handleStatusTransition('ON_SCENE')}
                           disabled={isSubmitting}
-                          style={{ background: '#2C3480', border: '1px solid #ffffff', color: '#ffffff' }}
                         >
                           Mark Unit ON SCENE
                         </button>
                       )}
                       {incident.status === 'ON_SCENE' && (
                         <button
-                          className="btn-primary"
+                          type="button"
+                          className="btn-hud-tactical btn-hud-primary"
                           onClick={() => handleStatusTransition('TRANSPORTING')}
                           disabled={isSubmitting}
-                          style={{ background: '#2C3480', border: '1px solid #ffffff', color: '#ffffff' }}
                         >
                           Mark TRANSPORTING to Hospital
                         </button>
                       )}
                       {incident.status !== 'RESOLVED' && incident.status !== 'CANCELLED' && (
                         <button
-                          className="btn-outline"
-                          style={{ background: '#2C3480', borderColor: '#ffffff', color: '#ffffff' }}
+                          type="button"
+                          className="btn-hud-tactical"
                           onClick={() => handleStatusTransition('RESOLVED')}
                           disabled={isSubmitting}
                         >
-                          <CheckCircle2 size={14} color="#ffffff" />
-                          <span>Close & RESOLVE Incident</span>
+                          <span className="material-symbols-outlined" style={{ fontSize: '15px', color: 'var(--primary)' }}>check_circle</span>
+                          <span>Close &amp; RESOLVE Incident</span>
                         </button>
                       )}
                     </div>
@@ -362,40 +343,40 @@ export default function IncidentDetailModal({
           {activeTab === 'ai-reasoning' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div
-                className="glass-panel"
-                style={{ padding: '16px', background: 'rgba(44, 52, 128, 0.25)', border: '1px solid #2C3480' }}
+                style={{
+                  padding: '16px',
+                  background: 'var(--surface-container-lowest)',
+                  border: '1px solid var(--border-tactical)',
+                  borderRadius: 'var(--radius-sm)',
+                }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ffffff', fontWeight: 800, fontSize: '13px' }}>
-                  <Cpu size={16} color="#ffffff" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)', fontWeight: 700, fontSize: '13px', fontFamily: 'var(--font-headline)' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>smart_toy</span>
                   <span>GEMINI 2.5 FLASH CLINICAL TRIAGE JUSTIFICATION</span>
                 </div>
-                <div style={{ fontSize: '13px', color: '#ffffff', marginTop: '8px', lineHeight: '1.6' }}>
+                <div style={{ fontSize: '13px', color: 'var(--on-surface-bright)', marginTop: '8px', lineHeight: '1.6' }}>
                   "{incident.aiTriage?.clinicalRecommendation || incident.aiTriage?.summary || 'Standard protocol emergency triage.'}"
                 </div>
               </div>
 
               <div>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--outline)', fontFamily: 'var(--font-telemetry)' }}>
                   CONTRIBUTING CLINICAL RISK FACTORS:
                 </span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
-                  {(incident.aiTriage?.factors || ['Standard emergency priority']).map((factor, idx) => (
+                  {incident.aiTriage?.factors?.map((f, i) => (
                     <div
-                      key={idx}
+                      key={i}
                       style={{
                         padding: '8px 12px',
-                        background: 'rgba(44, 52, 128, 0.15)',
-                        border: '1px solid rgba(44, 52, 128, 0.4)',
-                        borderRadius: '6px',
+                        background: 'var(--surface-container-lowest)',
+                        border: '1px solid var(--border-tactical)',
+                        borderRadius: '3px',
                         fontSize: '12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        color: '#ffffff',
+                        color: 'var(--on-surface)',
                       }}
                     >
-                      <ChevronRight size={14} color="#ffffff" />
-                      <span>{factor}</span>
+                      • {f}
                     </div>
                   ))}
                 </div>
@@ -405,42 +386,40 @@ export default function IncidentDetailModal({
 
           {/* TAB 3: Audit Trail */}
           {activeTab === 'timeline' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {(incident.timeline || []).map((step, idx) => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {incident.timeline?.map((entry, idx) => (
                 <div
                   key={idx}
                   style={{
-                    display: 'flex',
-                    gap: '12px',
                     padding: '10px 14px',
-                    background: 'rgba(44, 52, 128, 0.15)',
-                    border: '1px solid rgba(44, 52, 128, 0.4)',
-                    borderRadius: '6px',
+                    borderRadius: '4px',
+                    background: 'var(--surface-container-lowest)',
+                    border: '1px solid var(--border-tactical)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                   }}
                 >
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#ffffff', minWidth: '70px', fontWeight: 700 }}>
-                    {new Date(step.timestamp).toLocaleTimeString()}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: 800, color: '#ffffff' }}>{step.stage}</span>
-                      <span style={{ fontSize: '10px', color: '#94a3b8' }}>• {step.actor}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '16px', color: 'var(--primary)' }}>
+                      check_circle
+                    </span>
+                    <div>
+                      <div style={{ fontFamily: 'var(--font-telemetry)', fontSize: '12px', fontWeight: 700, color: 'var(--on-surface-bright)' }}>
+                        {entry.stage} • {entry.actor}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--outline)' }}>
+                        {entry.note}
+                      </div>
                     </div>
-                    <div style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '2px' }}>
-                      {step.note}
-                    </div>
                   </div>
+                  <span style={{ fontFamily: 'var(--font-telemetry)', fontSize: '11px', color: 'var(--secondary)' }}>
+                    {new Date(entry.timestamp).toLocaleTimeString()}
+                  </span>
                 </div>
               ))}
             </div>
           )}
-        </div>
-
-        {/* Modal Footer */}
-        <div className="modal-footer" style={{ background: '#000000', borderTop: '1px solid rgba(44, 52, 128, 0.5)' }}>
-          <button className="btn-outline" onClick={onClose} style={{ background: '#2C3480', border: '1px solid #ffffff', color: '#ffffff' }}>
-            Close
-          </button>
         </div>
       </div>
     </div>

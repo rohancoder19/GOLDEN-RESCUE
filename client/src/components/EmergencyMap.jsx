@@ -1,85 +1,105 @@
-import React, { useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMap } from 'react-leaflet';
+import React from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Polygon, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import {
-  AlertTriangle,
-  Ambulance as AmbulanceIcon,
-  Building2,
-  Navigation,
-  Layers,
-  Crosshair,
-  Flame,
-  Radio,
-} from 'lucide-react';
 
-// Center helper component
 function MapController({ center, zoom }) {
   const map = useMap();
   React.useEffect(() => {
-    if (center) {
+    if (center && Array.isArray(center) && center.length === 2 && !isNaN(center[0]) && !isNaN(center[1])) {
       map.setView(center, zoom || map.getZoom(), { animate: true });
     }
   }, [center, zoom, map]);
   return null;
 }
 
-// Custom DivIcons using SVGs with #000000, #FFFFFF, #2C3480
-const createIncidentIcon = (severity) => {
-  const colors = {
-    CRITICAL: '#ef4444',
-    HIGH: '#f97316',
-    MEDIUM: '#2C3480',
-    LOW: '#10b981',
-  };
-  const color = colors[severity] || '#2C3480';
+// Stitch Tactical Markers
+const createTacticalIncidentMarker = (incident) => {
+  const isCritical = incident.severity === 'CRITICAL';
+  const isHigh = incident.severity === 'HIGH';
+  const color = isCritical ? '#ff4d5a' : isHigh ? '#ffbd58' : '#00d4ff';
+
+  const html = `
+    <div style="position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none;">
+      ${isCritical ? `
+        <span style="position: absolute; top: -6px; width: 44px; height: 44px; border-radius: 50%; background: ${color}; opacity: 0.35; animation: ping 1.5s infinite;"></span>
+        <span style="position: absolute; top: 0px; width: 32px; height: 32px; border-radius: 50%; background: ${color}; opacity: 0.55; animation: pulse 2s infinite;"></span>
+      ` : ''}
+      <div style="position: relative; width: ${isCritical ? '26px' : '22px'}; height: ${isCritical ? '26px' : '22px'}; border-radius: 50%; background: ${color}; color: #0a1422; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 16px ${color}; border: 2px solid #f4f7fb;">
+        <span style="font-family: 'Material Symbols Outlined'; font-size: 14px; font-weight: bold; line-height: 1;">priority_high</span>
+      </div>
+      <div style="margin-top: 4px; background: rgba(5, 14, 28, 0.92); border: 1px solid ${color}; border-radius: 3px; padding: 2px 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.6); white-space: nowrap; text-align: center;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: ${color}; line-height: 1.1;">
+          ${incident.incidentId || 'INC'}
+        </div>
+        <div style="font-family: 'Inter', sans-serif; font-size: 9px; color: #859398; line-height: 1;">
+          ${incident.location?.address ? incident.location.address.slice(0, 18) : 'Sector Alpha'}
+        </div>
+      </div>
+    </div>
+  `;
 
   return L.divIcon({
     className: 'custom-leaflet-marker',
-    html: `
-      <div style="position: relative; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
-        <div style="position: absolute; inset: 0; border-radius: 50%; background: ${color}; opacity: 0.3; animation: pulseAnimation 1.8s infinite;"></div>
-        <div style="position: absolute; width: 14px; height: 14px; border-radius: 50%; background: ${color}; box-shadow: 0 0 10px ${color}; border: 2px solid #ffffff;"></div>
-      </div>
-    `,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
+    html,
+    iconSize: [60, 60],
+    iconAnchor: [30, 15],
   });
 };
 
-const createAmbulanceIcon = (status, callsign) => {
-  const isEnRoute = status === 'EN_ROUTE' || status === 'TRANSPORTING';
+const createTacticalAmbulanceMarker = (ambulance) => {
+  const callsign = ambulance.callsign || ambulance.vehicleId || 'AMB';
+  const speed = ambulance.location?.speedKmh || 48;
+  const isEnRoute = ambulance.status === 'EN_ROUTE' || ambulance.status === 'TRANSPORTING';
+
+  const html = `
+    <div style="display: flex; align-items: center; gap: 4px; background: rgba(5, 14, 28, 0.92); border: 1px solid #00d4ff; border-radius: 9999px; padding: 3px 8px; box-shadow: 0 0 12px rgba(0, 212, 255, 0.45); cursor: pointer; user-select: none;">
+      <span style="position: relative; display: flex; width: 7px; height: 7px;">
+        ${isEnRoute ? '<span style="position: absolute; inset: 0; border-radius: 50%; background: #00d4ff; opacity: 0.75; animation: ping 1.5s infinite;"></span>' : ''}
+        <span style="position: relative; width: 7px; height: 7px; border-radius: 50%; background: #00d4ff;"></span>
+      </span>
+      <span style="font-family: 'Material Symbols Outlined'; font-size: 14px; color: #00d4ff; line-height: 1;">airport_shuttle</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: #00d4ff;">
+        ${callsign}
+      </span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; color: #ffbd58;">
+        ${speed} km/h
+      </span>
+    </div>
+  `;
 
   return L.divIcon({
     className: 'custom-leaflet-marker',
-    html: `
-      <div style="position: relative; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; background: #000000; border: 2px solid #ffffff; border-radius: 8px; box-shadow: 0 0 12px rgba(44, 52, 128, 0.8);">
-        <div style="position: absolute; inset: 0; background: #2C3480; border-radius: 6px; opacity: ${isEnRoute ? '0.9' : '0.6'};"></div>
-        <svg style="position: relative; z-index: 2;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M10 10h4M12 8v4M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1 .4-1 1v9h1"/>
-          <circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>
-        </svg>
-      </div>
-    `,
-    iconSize: [34, 34],
-    iconAnchor: [17, 17],
+    html,
+    iconSize: [110, 30],
+    iconAnchor: [55, 15],
   });
 };
 
-const createHospitalIcon = (traumaLevel, availableBeds) => {
-  return L.divIcon({
-    className: 'custom-leaflet-marker',
-    html: `
-      <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: #000000; border: 2px solid #2C3480; border-radius: 50%; box-shadow: 0 0 12px rgba(44, 52, 128, 0.6);">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 6v12M6 12h12"/>
-        </svg>
-        <span style="position: absolute; bottom: -6px; right: -4px; background: #2C3480; color: #ffffff; font-size: 9px; font-weight: 800; padding: 1px 5px; border-radius: 99px; border: 1px solid #ffffff;">
-          ${availableBeds}
+const createTacticalHospitalMarker = (hospital) => {
+  const beds = hospital.capacity?.availableBeds ?? 8;
+  const isTrauma = hospital.traumaLevel?.includes('1');
+
+  const html = `
+    <div style="display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none;">
+      <div style="width: 28px; height: 28px; border-radius: 6px; background: ${isTrauma ? '#00d4ff' : '#16202f'}; color: ${isTrauma ? '#050e1c' : '#00d4ff'}; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 14px rgba(0, 212, 255, 0.45); border: 1px solid #00d4ff;">
+        <span style="font-family: 'Material Symbols Outlined'; font-size: 18px; font-weight: bold; line-height: 1;">local_hospital</span>
+      </div>
+      <div style="margin-top: 3px; background: rgba(5, 14, 28, 0.92); border: 1px solid #1e3a5f; border-radius: 3px; padding: 2px 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.6); text-align: center; white-space: nowrap;">
+        <span style="font-family: 'Space Grotesk', sans-serif; font-size: 10.5px; font-weight: 600; color: #f4f7fb; display: block; line-height: 1.1;">
+          ${hospital.name ? hospital.name.split(' ')[0] : 'Central'} (L1)
+        </span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 9.5px; font-weight: 700; color: #00d4ff; line-height: 1;">
+          ${beds} Beds Ready
         </span>
       </div>
-    `,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
+    </div>
+  `;
+
+  return L.divIcon({
+    className: 'custom-leaflet-marker',
+    html,
+    iconSize: [90, 52],
+    iconAnchor: [45, 14],
   });
 };
 
@@ -91,146 +111,38 @@ export default function EmergencyMap({
   selectedIncident = null,
   onSelectIncident,
   height = '100%',
+  layers = { incidents: true, fleet: true, hospitals: true, hotspots: true, routes: true },
 }) {
-  // Strict deduplication of arrays
-  const uniqueIncidents = Array.from(new Map(incidents.map((i) => [i.incidentId, i])).values());
-  const uniqueAmbulances = Array.from(new Map(ambulances.map((a) => [a.vehicleId, a])).values());
-  const uniqueHospitals = Array.from(new Map(hospitals.map((h) => [h.hospitalId, h])).values());
+  const defaultCenter = [37.7749, -122.4194]; // San Francisco Core
+  const rawCenter = selectedIncident?.location?.coordinates || defaultCenter;
+  const mapCenter = Array.isArray(rawCenter) && rawCenter.length === 2 && !isNaN(rawCenter[0]) && !isNaN(rawCenter[1])
+    ? rawCenter
+    : defaultCenter;
 
-  // Layer visibility state
-  const [layers, setLayers] = useState({
-    incidents: true,
-    fleet: true,
-    hospitals: true,
-    hotspots: true,
-    routes: true,
-  });
+  // Active Corridor waypoints
+  const routeWaypoints = selectedIncident?.routeData?.waypoints || [
+    [37.7785, -122.4120],
+    [37.7820, -122.4040],
+    [37.7895, -122.3892],
+    [37.7631, -122.4578],
+  ];
 
-  const defaultCenter = [37.7749, -122.4194]; // San Francisco Metro
-  const mapCenter = selectedIncident?.location?.coordinates || defaultCenter;
-
-  const toggleLayer = (layerKey) => {
-    setLayers((prev) => ({ ...prev, [layerKey]: !prev[layerKey] }));
-  };
+  // Tactical hazard exclusion polygon around focused incident
+  const hazardPerimeter = [
+    [mapCenter[0] + 0.003, mapCenter[1] - 0.004],
+    [mapCenter[0] + 0.005, mapCenter[1] + 0.003],
+    [mapCenter[0] - 0.002, mapCenter[1] + 0.005],
+    [mapCenter[0] - 0.004, mapCenter[1] - 0.002],
+  ];
 
   return (
-    <div style={{ position: 'relative', width: '100%', height, overflow: 'hidden', background: '#000000' }}>
-      {/* Map Control HUD Overlay */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '12px',
-          right: '12px',
-          zIndex: 1000,
-          display: 'flex',
-          gap: '6px',
-          background: '#000000',
-          padding: '6px',
-          borderRadius: '8px',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid #2C3480',
-          boxShadow: '0 4px 15px rgba(0,0,0,0.8)',
-        }}
-      >
-        <button
-          className={`layer-btn ${layers.incidents ? 'active' : ''}`}
-          onClick={() => toggleLayer('incidents')}
-          title="Toggle Incident Markers"
-          style={
-            layers.incidents
-              ? { background: '#2C3480', color: '#ffffff', borderColor: '#ffffff' }
-              : { background: 'transparent', color: '#cbd5e1', borderColor: 'rgba(44, 52, 128, 0.4)' }
-          }
-        >
-          <AlertTriangle size={13} color="#ffffff" />
-          <span>Incidents ({uniqueIncidents.length})</span>
-        </button>
-        <button
-          className={`layer-btn ${layers.fleet ? 'active' : ''}`}
-          onClick={() => toggleLayer('fleet')}
-          title="Toggle Fleet Telemetry"
-          style={
-            layers.fleet
-              ? { background: '#2C3480', color: '#ffffff', borderColor: '#ffffff' }
-              : { background: 'transparent', color: '#cbd5e1', borderColor: 'rgba(44, 52, 128, 0.4)' }
-          }
-        >
-          <AmbulanceIcon size={13} color="#ffffff" />
-          <span>Fleet ({uniqueAmbulances.length})</span>
-        </button>
-        <button
-          className={`layer-btn ${layers.hospitals ? 'active' : ''}`}
-          onClick={() => toggleLayer('hospitals')}
-          title="Toggle Hospital Network"
-          style={
-            layers.hospitals
-              ? { background: '#2C3480', color: '#ffffff', borderColor: '#ffffff' }
-              : { background: 'transparent', color: '#cbd5e1', borderColor: 'rgba(44, 52, 128, 0.4)' }
-          }
-        >
-          <Building2 size={13} color="#ffffff" />
-          <span>Hospitals ({uniqueHospitals.length})</span>
-        </button>
-        <button
-          className={`layer-btn ${layers.hotspots ? 'active' : ''}`}
-          onClick={() => toggleLayer('hotspots')}
-          title="Toggle Accident Hotspots"
-          style={
-            layers.hotspots
-              ? { background: '#2C3480', color: '#ffffff', borderColor: '#ffffff' }
-              : { background: 'transparent', color: '#cbd5e1', borderColor: 'rgba(44, 52, 128, 0.4)' }
-          }
-        >
-          <Flame size={13} color="#ffffff" />
-          <span>Hotspots</span>
-        </button>
-      </div>
-
-      {/* Selected Incident Telemetry Banner */}
-      {selectedIncident && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '16px',
-            left: '16px',
-            zIndex: 1000,
-            background: '#000000',
-            border: '2px solid #2C3480',
-            borderRadius: '8px',
-            padding: '12px 18px',
-            backdropFilter: 'blur(12px)',
-            maxWidth: '380px',
-            boxShadow: '0 0 20px rgba(44, 52, 128, 0.6)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#ffffff', fontWeight: 800 }}>
-              TARGET: {selectedIncident.incidentId}
-            </span>
-            <span className={`severity-badge badge-${selectedIncident.severity}`} style={{ fontSize: '9px' }}>
-              {selectedIncident.severity}
-            </span>
-          </div>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff', marginTop: '4px' }}>
-            {selectedIncident.title}
-          </div>
-          <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-            {selectedIncident.location?.address}
-          </div>
-          {selectedIncident.assignedAmbulanceCallsign && (
-            <div style={{ fontSize: '10px', color: '#ffffff', marginTop: '6px', fontFamily: 'var(--font-mono)', background: '#2C3480', padding: '2px 6px', borderRadius: '4px', display: 'inline-block' }}>
-              🚑 ASSIGNED: {selectedIncident.assignedAmbulanceCallsign} • ETA: {selectedIncident.routeData?.etaMinutes || 4}m
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Leaflet Map Container */}
+    <div style={{ position: 'relative', width: '100%', height, background: '#050e1c', overflow: 'hidden' }}>
       <MapContainer
-        center={defaultCenter}
+        center={mapCenter}
         zoom={13}
         scrollWheelZoom={true}
-        style={{ width: '100%', height: '100%', background: '#000000' }}
+        zoomControl={false}
+        style={{ width: '100%', height: '100%', background: '#050e1c' }}
       >
         <MapController center={mapCenter} zoom={selectedIncident ? 14 : 13} />
 
@@ -242,85 +154,93 @@ export default function EmergencyMap({
           maxZoom={19}
         />
 
-        {/* Hotspot Circles */}
+        {/* Hotspots Risk Buffers */}
         {layers.hotspots &&
-          hotspots.map((hs) => (
+          hotspots.map((hs, index) => (
             <Circle
-              key={hs.id}
+              key={hs.id || hs._id || `hotspot-${index}`}
               center={hs.coordinates}
-              radius={hs.radiusMeters || 600}
+              radius={hs.radiusMeters || 500}
               pathOptions={{
-                color: '#2C3480',
-                fillColor: '#2C3480',
-                fillOpacity: 0.2,
-                weight: 2,
-                dashArray: '4, 6',
+                color: '#ffbd58',
+                fillColor: '#ffbd58',
+                fillOpacity: 0.12,
+                weight: 1.5,
+                dashArray: '3, 6',
               }}
-            >
-              <Popup>
-                <div style={{ color: '#000000', fontSize: '11px' }}>
-                  <strong>{hs.name}</strong>
-                  <br />
-                  Risk: {hs.riskLevel}
-                  <br />
-                  Est. Incidents/Mo: {hs.historicalIncidentsMonth}
-                </div>
-              </Popup>
-            </Circle>
+            />
           ))}
 
-        {/* Active Rescue Route Polyline */}
-        {layers.routes && selectedIncident?.routeData?.waypoints?.length > 0 && (
-          <Polyline
-            positions={selectedIncident.routeData.waypoints}
-            pathOptions={{
-              color: '#ffffff',
-              weight: 4,
-              opacity: 0.95,
-              dashArray: '8, 8',
-            }}
-          />
+        {/* Priority Emergency Green Corridor Polyline */}
+        {layers.routes && (
+          <>
+            <Polyline
+              positions={routeWaypoints}
+              pathOptions={{
+                color: '#00d4ff',
+                weight: 3.5,
+                opacity: 0.9,
+                dashArray: '8, 6',
+              }}
+            />
+            {/* Hazard Exclusion Perimeter */}
+            <Polygon
+              positions={hazardPerimeter}
+              pathOptions={{
+                color: '#ff4d5a',
+                fillColor: '#93000a',
+                fillOpacity: 0.22,
+                weight: 1.5,
+                dashArray: '4, 4',
+              }}
+            />
+          </>
         )}
 
-        {/* Deduplicated Incident Markers */}
+        {/* Tactical Incident Markers */}
         {layers.incidents &&
-          uniqueIncidents.map((inc) => {
+          incidents.map((inc) => {
             const coords = inc.location?.coordinates;
             if (!coords || !Array.isArray(coords) || coords.length !== 2) return null;
 
             return (
               <Marker
-                key={inc.incidentId}
+                key={inc.incidentId || inc._id}
                 position={coords}
-                icon={createIncidentIcon(inc.severity)}
+                icon={createTacticalIncidentMarker(inc)}
                 eventHandlers={{
                   click: () => onSelectIncident && onSelectIncident(inc),
                 }}
               >
                 <Popup>
-                  <div style={{ color: '#000000', fontSize: '11px', minWidth: '180px' }}>
-                    <strong>{inc.incidentId}</strong>: {inc.title}
-                    <br />
-                    Severity: <strong>{inc.severity}</strong> | Status: {inc.status}
-                    <br />
-                    Location: {inc.location?.address}
-                    <br />
+                  <div style={{ minWidth: '180px', padding: '2px' }}>
+                    <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', color: '#00d4ff', fontWeight: 700 }}>
+                      {inc.incidentId} • {inc.severity}
+                    </div>
+                    <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '13px', fontWeight: 600, color: '#f4f7fb', marginTop: '2px' }}>
+                      {inc.title}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#859398', marginTop: '2px' }}>
+                      {inc.location?.address}
+                    </div>
                     <button
+                      type="button"
                       onClick={() => onSelectIncident && onSelectIncident(inc)}
                       style={{
-                        marginTop: '6px',
-                        background: '#2C3480',
-                        color: '#ffffff',
-                        border: '1px solid #000000',
-                        padding: '5px 8px',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '10px',
-                        fontWeight: 'bold',
+                        marginTop: '8px',
                         width: '100%',
+                        background: '#00d4ff',
+                        color: '#003642',
+                        border: 'none',
+                        borderRadius: '3px',
+                        padding: '4px 8px',
+                        fontFamily: 'JetBrains Mono, monospace',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
                       }}
                     >
-                      Open Operational Details
+                      Focus Incident File →
                     </button>
                   </div>
                 </Popup>
@@ -328,54 +248,58 @@ export default function EmergencyMap({
             );
           })}
 
-        {/* Deduplicated Ambulance Markers */}
+        {/* Tactical Ambulance Fleet Markers */}
         {layers.fleet &&
-          uniqueAmbulances.map((amb) => {
+          ambulances.map((amb) => {
             const coords = amb.location?.coordinates;
             if (!coords || !Array.isArray(coords) || coords.length !== 2) return null;
 
             return (
               <Marker
-                key={amb.vehicleId}
+                key={amb.vehicleId || amb._id}
                 position={coords}
-                icon={createAmbulanceIcon(amb.status, amb.callsign)}
+                icon={createTacticalAmbulanceMarker(amb)}
               >
                 <Popup>
-                  <div style={{ color: '#000000', fontSize: '11px' }}>
-                    <strong>{amb.callsign}</strong> ({amb.vehicleId})
-                    <br />
-                    Type: {amb.type}
-                    <br />
-                    Status: <strong>{amb.status}</strong>
-                    <br />
-                    Speed: {amb.location?.speedKmh || 0} km/h | Fuel: {amb.fuelLevel}%
+                  <div style={{ padding: '2px', minWidth: '150px' }}>
+                    <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', color: '#00d4ff', fontWeight: 700 }}>
+                      {amb.callsign || amb.vehicleId}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#859398' }}>
+                      Status: <strong style={{ color: '#f4f7fb' }}>{amb.status}</strong>
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#ffbd58', fontFamily: 'JetBrains Mono, monospace' }}>
+                      Speed: {amb.location?.speedKmh || 0} km/h • Fuel: {amb.fuelLevel}%
+                    </div>
                   </div>
                 </Popup>
               </Marker>
             );
           })}
 
-        {/* Deduplicated Hospital Markers */}
+        {/* Tactical Hospital Markers */}
         {layers.hospitals &&
-          uniqueHospitals.map((hosp) => {
+          hospitals.map((hosp) => {
             const coords = hosp.location?.coordinates;
             if (!coords || !Array.isArray(coords) || coords.length !== 2) return null;
 
             return (
               <Marker
-                key={hosp.hospitalId}
+                key={hosp.hospitalId || hosp._id}
                 position={coords}
-                icon={createHospitalIcon(hosp.traumaLevel, hosp.capacity?.availableBeds || 0)}
+                icon={createTacticalHospitalMarker(hosp)}
               >
                 <Popup>
-                  <div style={{ color: '#000000', fontSize: '11px' }}>
-                    <strong>{hosp.name}</strong>
-                    <br />
-                    Rating: {hosp.traumaLevel}
-                    <br />
-                    Status: <strong>{hosp.status}</strong>
-                    <br />
-                    Available Beds: {hosp.capacity?.availableBeds} | ICU Beds: {hosp.capacity?.icuAvailable}
+                  <div style={{ padding: '2px', minWidth: '160px' }}>
+                    <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '13px', color: '#f4f7fb', fontWeight: 700 }}>
+                      {hosp.name}
+                    </div>
+                    <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', color: '#00d4ff' }}>
+                      {hosp.traumaLevel || 'Level 1 Trauma'}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#859398', marginTop: '2px' }}>
+                      Available Beds: <strong style={{ color: '#f4f7fb' }}>{hosp.capacity?.availableBeds || 0}</strong> (ICU: {hosp.capacity?.icuAvailable || 0})
+                    </div>
                   </div>
                 </Popup>
               </Marker>

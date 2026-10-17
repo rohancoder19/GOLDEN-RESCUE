@@ -1,24 +1,6 @@
 import React, { useState } from 'react';
-import {
-  Cpu,
-  Flame,
-  Mic,
-  MicOff,
-  Sparkles,
-  Sliders,
-  Play,
-  RotateCcw,
-  CheckCircle2,
-  Clock,
-  Navigation,
-  AlertTriangle,
-  Building2,
-  Ambulance as AmbulanceIcon,
-  ChevronRight,
-  ShieldCheck,
-} from 'lucide-react';
 import { api } from '../services/api';
-import { playTelemetryChirp, playVoiceRecordChirp } from '../services/audio';
+import { playTelemetryChirp } from '../services/audio';
 
 export default function AiDecisionCenterView({
   incidents = [],
@@ -66,10 +48,9 @@ export default function AiDecisionCenterView({
   };
 
   return (
-    <div className="workspace-container" style={{ background: '#000000' }}>
+    <div className="workspace-container">
       {/* Header */}
       <div
-        className="glass-panel"
         style={{
           padding: '16px 20px',
           display: 'flex',
@@ -77,17 +58,21 @@ export default function AiDecisionCenterView({
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '12px',
-          background: '#000000',
-          border: '1px solid #2C3480',
+          background: 'var(--surface-container-low)',
+          border: '1px solid var(--border-tactical)',
+          borderRadius: 'var(--radius-md)',
+          boxShadow: 'var(--shadow-tactical)',
         }}
       >
         <div>
-          <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Cpu size={20} color="#ffffff" />
-            <span>AI DECISION CENTER & INNOVATION SUITE</span>
+          <h1 style={{ fontFamily: 'var(--font-headline)', fontSize: '20px', fontWeight: 700, color: 'var(--on-surface-bright)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '22px' }}>
+              smart_toy
+            </span>
+            <span>AI MULTI-AGENT DECISION CENTER &amp; SIMULATION SUITE</span>
           </h1>
-          <p style={{ fontSize: '12px', color: '#94a3b8' }}>
-            Multi-Agent clinical reasoning engine, predictive spatial corridors, what-if dispatch sandboxing, and post-action replay
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--outline)', marginTop: '2px' }}>
+            Multi-Agent clinical reasoning engine, Bayesian predictive spatial corridors, and dispatch sandboxing
           </p>
         </div>
 
@@ -101,13 +86,9 @@ export default function AiDecisionCenterView({
           ].map((tab) => (
             <button
               key={tab.id}
-              className={`filter-chip ${activeTab === tab.id ? 'active' : ''}`}
+              type="button"
+              className={`layer-toggle-btn ${activeTab === tab.id ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
-              style={
-                activeTab === tab.id
-                  ? { background: '#2C3480', color: '#ffffff', borderColor: '#ffffff', fontWeight: 800 }
-                  : { background: 'rgba(44, 52, 128, 0.15)', color: '#cbd5e1' }
-              }
             >
               {tab.label}
             </button>
@@ -119,14 +100,18 @@ export default function AiDecisionCenterView({
       {activeTab === 'pipeline' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div
-            className="glass-panel"
-            style={{ padding: '16px', background: 'rgba(44, 52, 128, 0.2)', border: '1px solid #2C3480' }}
+            style={{
+              padding: '14px 18px',
+              background: 'var(--surface-container-low)',
+              border: '1px solid var(--border-tactical)',
+              borderRadius: 'var(--radius-md)',
+            }}
           >
-            <div style={{ fontSize: '13px', fontWeight: 800, color: '#ffffff', marginBottom: '4px' }}>
+            <div style={{ fontFamily: 'var(--font-headline)', fontSize: '14px', fontWeight: 700, color: 'var(--primary)', marginBottom: '3px' }}>
               AUTONOMOUS 7-STAGE EMERGENCY DISPATCH REASONING ARCHITECTURE
             </div>
-            <p style={{ fontSize: '12px', color: '#cbd5e1' }}>
-              Every incident is evaluated through a decoupled deterministic operational pipeline paired with Google Gemini 2.5 Flash for clinical triage justification.
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--on-surface)' }}>
+              Every incident is evaluated through a deterministic tactical pipeline paired with Google Gemini 2.5 Flash for clinical triage justification and corridor clearance.
             </p>
           </div>
 
@@ -184,34 +169,35 @@ export default function AiDecisionCenterView({
             ].map((step, idx) => (
               <div
                 key={idx}
-                className="glass-panel"
                 style={{
                   padding: '16px',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '8px',
-                  background: 'rgba(14, 18, 44, 0.7)',
-                  border: '1px solid rgba(44, 52, 128, 0.4)',
-                  borderTop: '3px solid #2C3480',
+                  background: 'var(--surface-container-low)',
+                  border: '1px solid var(--border-tactical)',
+                  borderTop: '3px solid var(--primary)',
+                  borderRadius: 'var(--radius-sm)',
+                  boxShadow: 'var(--shadow-tactical)',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: '#ffffff', fontWeight: 800 }}>
+                  <span style={{ fontSize: '10px', fontFamily: 'var(--font-telemetry)', color: 'var(--primary)', fontWeight: 800 }}>
                     {step.stage}
                   </span>
-                  <span className="telemetry-chip" style={{ fontSize: '9px', background: '#2C3480', color: '#ffffff' }}>
+                  <span style={{ fontSize: '9.5px', fontFamily: 'var(--font-telemetry)', background: 'var(--surface-container-highest)', color: 'var(--secondary)', padding: '2px 5px', borderRadius: '3px' }}>
                     {step.latency}
                   </span>
                 </div>
-                <div style={{ fontSize: '13px', fontWeight: 800, color: '#ffffff' }}>
+                <div style={{ fontFamily: 'var(--font-headline)', fontSize: '13.5px', fontWeight: 700, color: 'var(--on-surface-bright)' }}>
                   {step.agent}
                 </div>
-                <div style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: '1.5' }}>
+                <div style={{ fontSize: '11.5px', color: 'var(--outline)', lineHeight: '1.5' }}>
                   {step.desc}
                 </div>
-                <div style={{ marginTop: 'auto', paddingTop: '8px', borderTop: '1px solid rgba(44, 52, 128, 0.3)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <CheckCircle2 size={13} color="#ffffff" />
-                  <span style={{ fontSize: '10px', color: '#ffffff', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                <div style={{ marginTop: 'auto', paddingTop: '8px', borderTop: '1px solid var(--border-tactical)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '14px', color: 'var(--primary)' }}>check_circle</span>
+                  <span style={{ fontSize: '10px', color: 'var(--on-surface)', fontFamily: 'var(--font-telemetry)', fontWeight: 700 }}>
                     STATUS: {step.status}
                   </span>
                 </div>
@@ -225,13 +211,17 @@ export default function AiDecisionCenterView({
       {activeTab === 'hotspots' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div
-            className="glass-panel"
-            style={{ padding: '16px', background: 'rgba(44, 52, 128, 0.2)', border: '1px solid #2C3480' }}
+            style={{
+              padding: '14px 18px',
+              background: 'var(--surface-container-low)',
+              border: '1px solid var(--border-tactical)',
+              borderRadius: 'var(--radius-md)',
+            }}
           >
-            <div style={{ fontSize: '13px', fontWeight: 800, color: '#ffffff', marginBottom: '4px' }}>
+            <div style={{ fontFamily: 'var(--font-headline)', fontSize: '14px', fontWeight: 700, color: 'var(--secondary)', marginBottom: '3px' }}>
               SPATIAL-TEMPORAL BAYESIAN ACCIDENT PREDICTIVE CORRIDORS
             </div>
-            <p style={{ fontSize: '12px', color: '#cbd5e1' }}>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--on-surface)' }}>
               Predictive risk corridors identify high-probability collision zones based on road curvature, rush-hour traffic volume, and real-time precipitation.
             </p>
           </div>
@@ -240,39 +230,42 @@ export default function AiDecisionCenterView({
             {hotspots.map((hs) => (
               <div
                 key={hs.id}
-                className="glass-panel"
                 style={{
-                  padding: '18px',
+                  padding: '16px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '12px',
-                  background: 'rgba(14, 18, 44, 0.7)',
-                  border: '1px solid rgba(44, 52, 128, 0.5)',
-                  borderLeft: '4px solid #2C3480',
+                  gap: '10px',
+                  background: 'var(--surface-container-low)',
+                  border: '1px solid var(--border-tactical)',
+                  borderLeft: '4px solid var(--secondary)',
+                  borderRadius: 'var(--radius-sm)',
+                  boxShadow: 'var(--shadow-tactical)',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#ffffff', fontWeight: 800 }}>
+                  <span style={{ fontFamily: 'var(--font-telemetry)', fontSize: '11px', color: 'var(--primary)', fontWeight: 800 }}>
                     {hs.id}
                   </span>
-                  <span className="telemetry-chip" style={{ background: '#2C3480', color: '#ffffff', border: '1px solid #ffffff' }}>
+                  <span style={{ fontFamily: 'var(--font-telemetry)', fontSize: '10px', background: 'rgba(255, 189, 88, 0.2)', border: '1px solid var(--secondary)', color: 'var(--secondary)', padding: '2px 6px', borderRadius: '3px' }}>
                     {hs.riskLevel.replace(/_/g, ' ')}
                   </span>
                 </div>
 
-                <div style={{ fontSize: '14px', fontWeight: 800, color: '#ffffff' }}>
+                <div style={{ fontFamily: 'var(--font-headline)', fontSize: '14px', fontWeight: 700, color: 'var(--on-surface-bright)' }}>
                   {hs.name}
                 </div>
 
-                <div style={{ fontSize: '12px', color: '#cbd5e1' }}>
-                  Historical Monthly Incident Frequency: <strong>{hs.historicalIncidentsMonth} collisions</strong>
+                <div style={{ fontSize: '12px', color: 'var(--on-surface)' }}>
+                  Historical Monthly Incident Frequency: <strong style={{ color: 'var(--primary)' }}>{hs.historicalIncidentsMonth} collisions</strong>
                 </div>
 
                 <div>
-                  <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700 }}>CONTRIBUTING RISK VECTORS:</div>
+                  <div style={{ fontSize: '10px', color: 'var(--outline)', fontWeight: 700, fontFamily: 'var(--font-telemetry)' }}>
+                    CONTRIBUTING RISK VECTORS:
+                  </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
                     {hs.primaryFactors?.map((f, i) => (
-                      <span key={i} className="telemetry-chip" style={{ fontSize: '10px', background: 'rgba(44, 52, 128, 0.25)', color: '#ffffff' }}>
+                      <span key={i} style={{ fontSize: '10px', fontFamily: 'var(--font-telemetry)', background: 'var(--surface-container-highest)', color: 'var(--on-surface)', padding: '2px 6px', borderRadius: '3px' }}>
                         {f}
                       </span>
                     ))}
@@ -282,12 +275,13 @@ export default function AiDecisionCenterView({
                 <div
                   style={{
                     padding: '8px 10px',
-                    borderRadius: '6px',
-                    background: '#2C3480',
-                    border: '1px solid #ffffff',
+                    borderRadius: '4px',
+                    background: 'rgba(0, 212, 255, 0.12)',
+                    border: '1px solid var(--primary)',
                     fontSize: '11px',
-                    color: '#ffffff',
+                    color: 'var(--primary)',
                     fontWeight: 700,
+                    fontFamily: 'var(--font-telemetry)',
                   }}
                 >
                   🎯 RECOMMENDED STAGING: {hs.recommendedPrePositionStation}
@@ -302,41 +296,43 @@ export default function AiDecisionCenterView({
       {activeTab === 'what-if' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div
-            className="glass-panel"
-            style={{ padding: '16px', background: 'rgba(44, 52, 128, 0.2)', border: '1px solid #2C3480' }}
+            style={{
+              padding: '14px 18px',
+              background: 'var(--surface-container-low)',
+              border: '1px solid var(--border-tactical)',
+              borderRadius: 'var(--radius-md)',
+            }}
           >
-            <div style={{ fontSize: '13px', fontWeight: 800, color: '#ffffff', marginBottom: '4px' }}>
+            <div style={{ fontFamily: 'var(--font-headline)', fontSize: '14px', fontWeight: 700, color: 'var(--primary)', marginBottom: '3px' }}>
               NON-OPERATIONAL WHAT-IF DISPATCH SIMULATOR
             </div>
-            <p style={{ fontSize: '12px', color: '#cbd5e1' }}>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--on-surface)' }}>
               Test hypothetical mass-casualty scenarios without altering active emergency operations. Compare response times and resource exhaustion limits.
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            <div className="glass-panel" style={{ padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px', background: '#000000', border: '1px solid #2C3480' }}>
-              <div style={{ fontSize: '14px', fontWeight: 800, color: '#ffffff' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--surface-container-low)', border: '1px solid var(--border-tactical)', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ fontFamily: 'var(--font-headline)', fontSize: '15px', fontWeight: 700, color: 'var(--on-surface-bright)' }}>
                 CONFIGURE SIMULATION DRILL
               </div>
 
               <div className="form-group">
-                <label className="form-label" style={{ color: '#ffffff' }}>SCENARIO NAME:</label>
+                <label className="form-label">SCENARIO NAME:</label>
                 <input
                   type="text"
                   className="form-input"
                   value={whatIfTitle}
                   onChange={(e) => setWhatIfTitle(e.target.value)}
-                  style={{ background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
                 />
               </div>
 
               <div className="form-group">
-                <label className="form-label" style={{ color: '#ffffff' }}>EMERGENCY CATEGORY:</label>
+                <label className="form-label">EMERGENCY CATEGORY:</label>
                 <select
                   className="form-select"
                   value={whatIfCategory}
                   onChange={(e) => setWhatIfCategory(e.target.value)}
-                  style={{ background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
                 >
                   <option value="TRAFFIC_COLLISION">Traffic Collision</option>
                   <option value="CARDIAC_ARREST">Cardiac Arrest</option>
@@ -346,39 +342,39 @@ export default function AiDecisionCenterView({
               </div>
 
               <div className="form-group">
-                <label className="form-label" style={{ color: '#ffffff' }}>SIMULATED LOCATION:</label>
+                <label className="form-label">SIMULATED LOCATION:</label>
                 <input
                   type="text"
                   className="form-input"
                   value={whatIfAddress}
                   onChange={(e) => setWhatIfAddress(e.target.value)}
-                  style={{ background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
                 />
               </div>
 
               <button
-                className="btn-primary"
+                type="button"
+                className="btn-command-gold"
                 onClick={handleRunWhatIf}
                 disabled={isSimulating}
-                style={{ marginTop: '8px', justifyContent: 'center', background: '#2C3480', border: '1px solid #ffffff', color: '#ffffff' }}
+                style={{ marginTop: '6px' }}
               >
-                <Play size={15} color="#ffffff" />
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>play_arrow</span>
                 <span>{isSimulating ? 'SIMULATING RESPONSE...' : 'EXECUTE WHAT-IF SIMULATION'}</span>
               </button>
             </div>
 
-            <div className="glass-panel" style={{ padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px', background: '#000000', border: '1px solid #2C3480' }}>
-              <div style={{ fontSize: '14px', fontWeight: 800, color: '#ffffff' }}>
+            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--surface-container-low)', border: '1px solid var(--border-tactical)', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ fontFamily: 'var(--font-headline)', fontSize: '15px', fontWeight: 700, color: 'var(--on-surface-bright)' }}>
                 PROJECTED OPERATIONAL OUTCOME
               </div>
 
               {simulationResult ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div style={{ display: 'flex', gap: '10px' }}>
-                    <span className={`severity-badge badge-${simulationResult.triageSeverity}`}>
+                    <span className={`incident-severity-badge badge-${simulationResult.triageSeverity === 'CRITICAL' ? 'crit' : 'high'}`}>
                       {simulationResult.triageSeverity}
                     </span>
-                    <span className="telemetry-chip" style={{ background: '#2C3480', color: '#ffffff' }}>
+                    <span style={{ fontFamily: 'var(--font-telemetry)', fontSize: '11px', color: 'var(--primary)', background: 'rgba(0, 212, 255, 0.15)', padding: '2px 8px', borderRadius: '3px' }}>
                       AI CONFIDENCE: {simulationResult.confidence}%
                     </span>
                   </div>
@@ -386,48 +382,44 @@ export default function AiDecisionCenterView({
                   <div
                     style={{
                       padding: '12px',
-                      borderRadius: '6px',
-                      background: 'rgba(44, 52, 128, 0.2)',
-                      border: '1px solid rgba(44, 52, 128, 0.5)',
+                      borderRadius: '4px',
+                      background: 'var(--surface-container-lowest)',
+                      border: '1px solid var(--border-tactical)',
                     }}
                   >
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--outline)', fontFamily: 'var(--font-telemetry)' }}>
                       RECOMMENDED AMBULANCE:
                     </div>
-                    <div style={{ fontSize: '13px', color: '#ffffff', fontWeight: 800 }}>
+                    <div style={{ fontSize: '14px', color: 'var(--primary)', fontWeight: 800 }}>
                       🚑 {simulationResult.recommendedAmbulance?.callsign || 'Mutual Aid Request Required'}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                      Projected Arrival Time: <strong>{simulationResult.projectedEtaMinutes || 4} minutes</strong>
+                    <div style={{ fontSize: '11px', color: 'var(--outline)', marginTop: '2px' }}>
+                      ETA: {simulationResult.recommendedAmbulance?.etaMinutes || 4} mins • Base: {simulationResult.recommendedAmbulance?.baseStation}
                     </div>
                   </div>
 
                   <div
                     style={{
                       padding: '12px',
-                      borderRadius: '6px',
-                      background: 'rgba(44, 52, 128, 0.2)',
-                      border: '1px solid rgba(44, 52, 128, 0.5)',
+                      borderRadius: '4px',
+                      background: 'var(--surface-container-lowest)',
+                      border: '1px solid var(--border-tactical)',
                     }}
                   >
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff' }}>
-                      RECOMMENDED DESTINATION FACILITY:
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--outline)', fontFamily: 'var(--font-telemetry)' }}>
+                      MATCHED HOSPITAL DESTINATION:
                     </div>
-                    <div style={{ fontSize: '13px', color: '#ffffff', fontWeight: 800 }}>
-                      🏥 {simulationResult.recommendedHospital?.name}
+                    <div style={{ fontSize: '14px', color: 'var(--secondary)', fontWeight: 800 }}>
+                      🏥 {simulationResult.matchedHospital?.name}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                      Available ICU Beds: {simulationResult.recommendedHospital?.icuAvailable} beds
+                    <div style={{ fontSize: '11px', color: 'var(--outline)', marginTop: '2px' }}>
+                      Available Beds: {simulationResult.matchedHospital?.availableBeds} • Level: {simulationResult.matchedHospital?.traumaLevel}
                     </div>
-                  </div>
-
-                  <div style={{ fontSize: '11px', color: '#cbd5e1', fontStyle: 'italic' }}>
-                    "{simulationResult.clinicalRecommendation}"
                   </div>
                 </div>
               ) : (
-                <div style={{ padding: '40px 20px', textAlign: 'center', color: '#94a3b8' }}>
-                  Click Execute to model dispatch decisions, nearest vehicle selection, and transit times.
+                <div style={{ padding: '40px', textAlign: 'center', color: 'var(--outline)', fontSize: '12px' }}>
+                  Execute a scenario to preview AI multi-agent dispatch predictions and fleet routing.
                 </div>
               )}
             </div>
@@ -435,93 +427,94 @@ export default function AiDecisionCenterView({
         </div>
       )}
 
-      {/* TAB 4: Incident Replay Engine */}
+      {/* TAB 4: Incident Replay */}
       {activeTab === 'replay' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div
-            className="glass-panel"
-            style={{ padding: '16px', background: 'rgba(44, 52, 128, 0.2)', border: '1px solid #2C3480' }}
+            style={{
+              padding: '14px 18px',
+              background: 'var(--surface-container-low)',
+              border: '1px solid var(--border-tactical)',
+              borderRadius: 'var(--radius-md)',
+            }}
           >
-            <div style={{ fontSize: '13px', fontWeight: 800, color: '#ffffff', marginBottom: '4px' }}>
-              ORIGINAL INCIDENT POST-ACTION REPLAY & TIMELINE SCRUBBER
+            <div style={{ fontFamily: 'var(--font-headline)', fontSize: '14px', fontWeight: 700, color: 'var(--primary)', marginBottom: '3px' }}>
+              CHRONOLOGICAL INCIDENT REPLAY &amp; AUDIT TRAIL
             </div>
-            <p style={{ fontSize: '12px', color: '#cbd5e1' }}>
-              Step backward or forward through authentic emergency lifecycles from initial 911 alert through AI triage, vehicle rollout, and hospital handover.
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--on-surface)' }}>
+              Step backward and forward through past critical incidents to review triage timing, vehicle rollout, and patient arrival milestones.
             </p>
           </div>
 
           {selectedReplayIncident ? (
-            <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', background: '#000000', border: '1px solid #2C3480' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff' }}>SELECT INCIDENT:</span>
-                <select
-                  className="form-select"
-                  style={{ maxWidth: '400px', background: '#000000', border: '1px solid #2C3480', color: '#ffffff' }}
-                  value={replayIncidentId}
-                  onChange={(e) => {
-                    setReplayIncidentId(e.target.value);
-                    setReplayStepIndex(0);
-                  }}
-                >
-                  {completedIncidents.map((inc) => (
-                    <option key={inc.incidentId} value={inc.incidentId}>
-                      {inc.incidentId}: {inc.title} ({inc.status})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8' }}>
-                  <span>START: {selectedReplayIncident.timeline?.[0]?.stage || 'REPORTED'}</span>
-                  <span style={{ color: '#ffffff', fontWeight: 700 }}>
-                    STEP {replayStepIndex + 1} OF {selectedReplayIncident.timeline?.length || 1}
-                  </span>
-                  <span>END: {selectedReplayIncident.timeline?.[selectedReplayIncident.timeline.length - 1]?.stage || 'RESOLVED'}</span>
-                </div>
-
-                <input
-                  type="range"
-                  min="0"
-                  max={(selectedReplayIncident.timeline?.length || 1) - 1}
-                  value={replayStepIndex}
-                  onChange={(e) => setReplayStepIndex(Number(e.target.value))}
-                  style={{ width: '100%', accentColor: '#2C3480' }}
-                />
-              </div>
-
-              {selectedReplayIncident.timeline?.[replayStepIndex] && (
-                <div
-                  style={{
-                    padding: '16px',
-                    borderRadius: '8px',
-                    background: '#2C3480',
-                    border: '1px solid #ffffff',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '6px',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '14px', fontWeight: 800, color: '#ffffff' }}>
-                      STAGE: {selectedReplayIncident.timeline[replayStepIndex].stage}
-                    </span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#cbd5e1' }}>
-                      {new Date(selectedReplayIncident.timeline[replayStepIndex].timestamp).toLocaleTimeString()}
-                    </span>
+            <div
+              style={{
+                padding: '20px',
+                background: 'var(--surface-container-low)',
+                border: '1px solid var(--border-tactical)',
+                borderRadius: 'var(--radius-md)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-headline)', fontSize: '16px', fontWeight: 700, color: 'var(--on-surface-bright)' }}>
+                    {selectedReplayIncident.title} ({selectedReplayIncident.incidentId})
                   </div>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff' }}>
-                    Actor: {selectedReplayIncident.timeline[replayStepIndex].actor}
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#e2e8f0' }}>
-                    {selectedReplayIncident.timeline[replayStepIndex].note}
+                  <div style={{ fontSize: '11px', color: 'var(--outline)' }}>
+                    {selectedReplayIncident.location?.address}
                   </div>
                 </div>
-              )}
+                <span className={`incident-severity-badge badge-${selectedReplayIncident.severity === 'CRITICAL' ? 'crit' : 'high'}`}>
+                  {selectedReplayIncident.severity}
+                </span>
+              </div>
+
+              {/* Timeline Stepper */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {selectedReplayIncident.timeline?.map((step, idx) => {
+                  const isCurrent = idx === replayStepIndex;
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => setReplayStepIndex(idx)}
+                      style={{
+                        padding: '10px 14px',
+                        borderRadius: '4px',
+                        background: isCurrent ? 'var(--surface-container-highest)' : 'var(--surface-container-lowest)',
+                        border: `1px solid ${isCurrent ? 'var(--primary)' : 'var(--border-tactical)'}`,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '16px', color: isCurrent ? 'var(--primary)' : 'var(--outline)' }}>
+                          {isCurrent ? 'radio_button_checked' : 'check_circle'}
+                        </span>
+                        <div>
+                          <div style={{ fontFamily: 'var(--font-telemetry)', fontSize: '12px', fontWeight: 700, color: 'var(--on-surface-bright)' }}>
+                            {step.stage} • {step.actor}
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'var(--outline)' }}>
+                            {step.note}
+                          </div>
+                        </div>
+                      </div>
+                      <span style={{ fontFamily: 'var(--font-telemetry)', fontSize: '11px', color: 'var(--secondary)' }}>
+                        {new Date(step.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           ) : (
-            <div className="glass-panel" style={{ padding: '40px', textAlign: 'center', color: '#94a3b8', background: '#000000' }}>
-              No incidents with completed timelines available for replay.
+            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--outline)' }}>
+              No incidents with recorded timeline data for replay.
             </div>
           )}
         </div>

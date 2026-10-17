@@ -1,15 +1,4 @@
 import React from 'react';
-import {
-  BarChart3,
-  Clock,
-  Activity,
-  Ambulance as AmbulanceIcon,
-  Building2,
-  Download,
-  AlertTriangle,
-  CheckCircle2,
-  Layers,
-} from 'lucide-react';
 
 export default function AnalyticsView({ analytics = null, incidents = [] }) {
   const metrics = analytics?.metrics || {
@@ -53,10 +42,9 @@ export default function AnalyticsView({ analytics = null, incidents = [] }) {
   };
 
   return (
-    <div className="workspace-container" style={{ background: '#000000' }}>
+    <div className="workspace-container">
       {/* Header */}
       <div
-        className="glass-panel"
         style={{
           padding: '16px 20px',
           display: 'flex',
@@ -64,113 +52,122 @@ export default function AnalyticsView({ analytics = null, incidents = [] }) {
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '12px',
-          background: '#000000',
-          border: '1px solid #2C3480',
+          background: 'var(--surface-container-low)',
+          border: '1px solid var(--border-tactical)',
+          borderRadius: 'var(--radius-md)',
+          boxShadow: 'var(--shadow-tactical)',
         }}
       >
         <div>
-          <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <BarChart3 size={20} color="#ffffff" />
-            <span>OPERATIONAL RESPONSE ANALYTICS & TELEMETRY AUDIT</span>
+          <h1 style={{ fontFamily: 'var(--font-headline)', fontSize: '20px', fontWeight: 700, color: 'var(--on-surface-bright)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '22px' }}>
+              monitoring
+            </span>
+            <span>TACTICAL RESPONSE ANALYTICS &amp; SLA AUDIT</span>
           </h1>
-          <p style={{ fontSize: '12px', color: '#94a3b8' }}>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--outline)', marginTop: '2px' }}>
             Empirical response timings calculated from database timestamps (Sample: {metrics.sampleSizes?.dispatchCalculatedFrom || 4} dispatches)
           </p>
         </div>
 
         <button
-          className="btn-outline"
+          type="button"
+          className="btn-hud-tactical btn-hud-primary"
           onClick={handleExportSummary}
-          style={{ background: '#2C3480', border: '1px solid #ffffff', color: '#ffffff', fontWeight: 700 }}
+          style={{ padding: '8px 16px', fontSize: '12px' }}
         >
-          <Download size={15} color="#ffffff" />
+          <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>download</span>
           <span>Export Analytics Report (JSON)</span>
         </button>
       </div>
 
       {/* Primary KPI Ribbon */}
-      <div className="metrics-ribbon">
-        <div className="metric-card glass-panel" style={{ background: 'rgba(44, 52, 128, 0.25)', border: '1px solid #2C3480' }}>
-          <div className="metric-header">
-            <span className="metric-label" style={{ color: '#ffffff' }}>Average Dispatch Time</span>
-            <Clock size={16} color="#ffffff" />
+      <div className="mission-kpi-bar" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span className="kpi-label">Average Dispatch Time</span>
+            <span className="material-symbols-outlined" style={{ fontSize: '16px', color: 'var(--primary)' }}>timer</span>
           </div>
-          <div className="metric-value-row">
-            <span className="metric-value" style={{ color: '#ffffff' }}>{metrics.avgDispatchSeconds}</span>
-            <span className="metric-unit" style={{ color: '#cbd5e1' }}>SECONDS</span>
+          <div className="kpi-value-row">
+            <span className="kpi-value" style={{ color: 'var(--primary)' }}>{metrics.avgDispatchSeconds}</span>
+            <span style={{ fontFamily: 'var(--font-telemetry)', fontSize: '11px', color: 'var(--outline)' }}>SECONDS</span>
           </div>
-          <div className="metric-subtext" style={{ color: '#94a3b8' }}>
-            Calculated from <code>dispatchedAt - reportedAt</code>
-          </div>
-        </div>
-
-        <div className="metric-card glass-panel" style={{ background: 'rgba(44, 52, 128, 0.25)', border: '1px solid #2C3480' }}>
-          <div className="metric-header">
-            <span className="metric-label" style={{ color: '#ffffff' }}>Average Arrival Time</span>
-            <Clock size={16} color="#ffffff" />
-          </div>
-          <div className="metric-value-row">
-            <span className="metric-value" style={{ color: '#ffffff' }}>{metrics.avgArrivalMinutes}</span>
-            <span className="metric-unit" style={{ color: '#cbd5e1' }}>MINUTES</span>
-          </div>
-          <div className="metric-subtext" style={{ color: '#94a3b8' }}>
-            Calculated from <code>arrivedAt - dispatchedAt</code>
+          <div className="kpi-footer-row">
+            <span>Triage to rollout SLA: &lt; 60s</span>
           </div>
         </div>
 
-        <div className="metric-card glass-panel" style={{ background: 'rgba(44, 52, 128, 0.25)', border: '1px solid #2C3480' }}>
-          <div className="metric-header">
-            <span className="metric-label" style={{ color: '#ffffff' }}>Fleet Utilization Rate</span>
-            <AmbulanceIcon size={16} color="#ffffff" />
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span className="kpi-label">Average Arrival Time</span>
+            <span className="material-symbols-outlined" style={{ fontSize: '16px', color: 'var(--secondary)' }}>near_me</span>
           </div>
-          <div className="metric-value-row">
-            <span className="metric-value" style={{ color: '#ffffff' }}>{metrics.fleetUtilizationRate}%</span>
-            <span className="metric-unit" style={{ color: '#cbd5e1' }}>ACTIVE FLEET</span>
+          <div className="kpi-value-row">
+            <span className="kpi-value" style={{ color: 'var(--secondary)' }}>{metrics.avgArrivalMinutes}</span>
+            <span style={{ fontFamily: 'var(--font-telemetry)', fontSize: '11px', color: 'var(--outline)' }}>MINUTES</span>
           </div>
-          <div className="metric-subtext" style={{ color: '#94a3b8' }}>Assigned or in transit vs available</div>
+          <div className="kpi-footer-row">
+            <span>Golden Hour threshold</span>
+          </div>
         </div>
 
-        <div className="metric-card glass-panel" style={{ background: 'rgba(44, 52, 128, 0.25)', border: '1px solid #2C3480' }}>
-          <div className="metric-header">
-            <span className="metric-label" style={{ color: '#ffffff' }}>Hospital Bed Occupancy</span>
-            <Building2 size={16} color="#ffffff" />
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span className="kpi-label">Fleet Utilization Rate</span>
+            <span className="material-symbols-outlined" style={{ fontSize: '16px', color: 'var(--primary)' }}>airport_shuttle</span>
           </div>
-          <div className="metric-value-row">
-            <span className="metric-value" style={{ color: '#ffffff' }}>{metrics.hospitalBedUtilizationRate}%</span>
-            <span className="metric-unit" style={{ color: '#cbd5e1' }}>UTILIZED</span>
+          <div className="kpi-value-row">
+            <span className="kpi-value">{metrics.fleetUtilizationRate}%</span>
+            <span style={{ fontFamily: 'var(--font-telemetry)', fontSize: '11px', color: 'var(--outline)' }}>ACTIVE FLEET</span>
           </div>
-          <div className="metric-subtext" style={{ color: '#94a3b8' }}>Aggregate regional bed capacity</div>
+          <div className="kpi-footer-row">
+            <span>Assigned or in transit</span>
+          </div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span className="kpi-label">Hospital Bed Occupancy</span>
+            <span className="material-symbols-outlined" style={{ fontSize: '16px', color: 'var(--primary-light)' }}>local_hospital</span>
+          </div>
+          <div className="kpi-value-row">
+            <span className="kpi-value">{metrics.hospitalBedUtilizationRate}%</span>
+            <span style={{ fontFamily: 'var(--font-telemetry)', fontSize: '11px', color: 'var(--outline)' }}>UTILIZED</span>
+          </div>
+          <div className="kpi-footer-row">
+            <span>Regional capacity safe</span>
+          </div>
         </div>
       </div>
 
       {/* Distribution Charts Visual Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
         {/* Severity Distribution */}
-        <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', background: '#000000', border: '1px solid #2C3480' }}>
-          <div style={{ fontSize: '14px', fontWeight: 800, color: '#ffffff' }}>
+        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'var(--surface-container-low)', border: '1px solid var(--border-tactical)', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ fontFamily: 'var(--font-headline)', fontSize: '15px', fontWeight: 700, color: 'var(--on-surface-bright)' }}>
             INCIDENT SEVERITY DISTRIBUTION (ORIGINAL RECORDS)
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {[
-              { label: 'CRITICAL', count: severityDist.CRITICAL, color: '#ef4444' },
-              { label: 'HIGH', count: severityDist.HIGH, color: '#f97316' },
-              { label: 'MEDIUM', count: severityDist.MEDIUM, color: '#2C3480' },
-              { label: 'LOW', count: severityDist.LOW, color: '#10b981' },
+              { label: 'CRITICAL', count: severityDist.CRITICAL, color: 'var(--error)' },
+              { label: 'HIGH', count: severityDist.HIGH, color: 'var(--secondary)' },
+              { label: 'MEDIUM', count: severityDist.MEDIUM, color: 'var(--primary)' },
+              { label: 'LOW', count: severityDist.LOW, color: 'var(--outline)' },
             ].map((item) => {
               const total = Math.max(1, incidents.length);
               const pct = Math.round((item.count / total) * 100);
 
               return (
-                <div key={item.label} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div key={item.label} style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                    <span style={{ fontWeight: 700, color: item.color }}>{item.label}</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', color: '#cbd5e1', fontWeight: 700 }}>
+                    <span style={{ fontWeight: 700, color: item.color, fontFamily: 'var(--font-telemetry)' }}>{item.label}</span>
+                    <span style={{ fontFamily: 'var(--font-telemetry)', color: 'var(--outline)', fontWeight: 700 }}>
                       {item.count} cases ({pct}%)
                     </span>
                   </div>
-                  <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: `${pct}%`, height: '100%', background: item.color, borderRadius: '4px' }} />
+                  <div style={{ width: '100%', height: '6px', background: 'var(--surface-container-highest)', borderRadius: '9999px', overflow: 'hidden' }}>
+                    <div style={{ width: `${pct}%`, height: '100%', background: item.color }} />
                   </div>
                 </div>
               );
@@ -179,20 +176,20 @@ export default function AnalyticsView({ analytics = null, incidents = [] }) {
         </div>
 
         {/* Dispatch Pipeline Timings Rationale */}
-        <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', background: '#000000', border: '1px solid #2C3480' }}>
-          <div style={{ fontSize: '14px', fontWeight: 800, color: '#ffffff' }}>
-            TIMING METHODOLOGY & DATA PROVENANCE
+        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'var(--surface-container-low)', border: '1px solid var(--border-tactical)', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ fontFamily: 'var(--font-headline)', fontSize: '15px', fontWeight: 700, color: 'var(--on-surface-bright)' }}>
+            TIMING METHODOLOGY &amp; DATA PROVENANCE
           </div>
 
-          <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: '1.6' }}>
+          <div style={{ fontSize: '12px', color: 'var(--on-surface)', lineHeight: '1.6' }}>
             <p>
-              • <strong>Detection-to-Dispatch Time:</strong> Measures the interval from when an incident enters the system to when an operator authorizes ambulance rollout. Average: <strong style={{ color: '#ffffff' }}>{metrics.avgDispatchSeconds} seconds</strong>.
+              • <strong style={{ color: 'var(--primary)' }}>Detection-to-Dispatch Time:</strong> Measures the interval from when an incident enters the system to when an operator authorizes ambulance rollout. Average: <strong style={{ color: 'var(--on-surface-bright)' }}>{metrics.avgDispatchSeconds} seconds</strong>.
             </p>
             <p style={{ marginTop: '8px' }}>
-              • <strong>Dispatch-to-Arrival Time:</strong> Measures the vehicle transit phase until on-scene telemetry confirmation. Current fleet average: <strong style={{ color: '#ffffff' }}>{metrics.avgArrivalMinutes} minutes</strong>.
+              • <strong style={{ color: 'var(--secondary)' }}>Dispatch-to-Arrival Time:</strong> Measures the vehicle transit phase until on-scene telemetry confirmation. Current fleet average: <strong style={{ color: 'var(--on-surface-bright)' }}>{metrics.avgArrivalMinutes} minutes</strong>.
             </p>
             <p style={{ marginTop: '8px' }}>
-              • <strong>Transparency Note:</strong> Metrics reflect active records in the MongoDB <code>golden_guardian</code> database without duplicate simulation bias.
+              • <strong style={{ color: 'var(--on-surface-bright)' }}>Transparency Note:</strong> Metrics reflect active records in the MongoDB <code>golden_guardian</code> database without duplicate simulation bias.
             </p>
           </div>
         </div>

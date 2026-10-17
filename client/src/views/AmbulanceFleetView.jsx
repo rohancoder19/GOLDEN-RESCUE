@@ -1,22 +1,9 @@
 import React, { useState } from 'react';
-import {
-  Ambulance as AmbulanceIcon,
-  ShieldCheck,
-  Battery,
-  Fuel,
-  Users,
-  Wrench,
-  Navigation,
-  CheckCircle2,
-  AlertCircle,
-  Radio,
-} from 'lucide-react';
 import { api } from '../services/api';
 import { playTelemetryChirp } from '../services/audio';
 
 export default function AmbulanceFleetView({ ambulances = [], onAmbulanceUpdated }) {
   const [statusFilter, setStatusFilter] = useState('ALL');
-  const [typeFilter, setTypeFilter] = useState('ALL');
 
   // Strict deduplication of fleet by vehicleId
   const uniqueAmbulances = Array.from(
@@ -25,7 +12,6 @@ export default function AmbulanceFleetView({ ambulances = [], onAmbulanceUpdated
 
   const filtered = uniqueAmbulances.filter((amb) => {
     if (statusFilter !== 'ALL' && amb.status !== statusFilter) return false;
-    if (typeFilter !== 'ALL' && amb.type !== typeFilter) return false;
     return true;
   });
 
@@ -40,10 +26,9 @@ export default function AmbulanceFleetView({ ambulances = [], onAmbulanceUpdated
   };
 
   return (
-    <div className="workspace-container" style={{ background: '#000000' }}>
+    <div className="workspace-container">
       {/* Header */}
       <div
-        className="glass-panel"
         style={{
           padding: '16px 20px',
           display: 'flex',
@@ -51,31 +36,31 @@ export default function AmbulanceFleetView({ ambulances = [], onAmbulanceUpdated
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '12px',
-          background: '#000000',
-          border: '1px solid #2C3480',
+          background: 'var(--surface-container-low)',
+          border: '1px solid var(--border-tactical)',
+          borderRadius: 'var(--radius-md)',
+          boxShadow: 'var(--shadow-tactical)',
         }}
       >
         <div>
-          <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <AmbulanceIcon size={20} color="#ffffff" />
-            <span>ORIGINAL AMBULANCE FLEET & RESPONDER TELEMETRY</span>
+          <h1 style={{ fontFamily: 'var(--font-headline)', fontSize: '20px', fontWeight: 700, color: 'var(--on-surface-bright)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '22px' }}>
+              near_me
+            </span>
+            <span>TACTICAL FLEET &amp; RESPONDER TRACKING</span>
           </h1>
-          <p style={{ fontSize: '12px', color: '#94a3b8' }}>
-            Active verified emergency vehicles, certifications, and advanced life-support capabilities
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--outline)', marginTop: '2px' }}>
+            Active verified mobile units, telemetry sensors, and ALS life-support crew complements
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '6px' }}>
           {['ALL', 'AVAILABLE', 'EN_ROUTE', 'AT_SCENE', 'OUT_OF_SERVICE'].map((st) => (
             <button
               key={st}
-              className={`filter-chip ${statusFilter === st ? 'active' : ''}`}
+              type="button"
+              className={`layer-toggle-btn ${statusFilter === st ? 'active' : ''}`}
               onClick={() => setStatusFilter(st)}
-              style={
-                statusFilter === st
-                  ? { background: '#2C3480', color: '#ffffff', borderColor: '#ffffff', fontWeight: 800 }
-                  : { background: 'rgba(44, 52, 128, 0.15)', color: '#cbd5e1' }
-              }
             >
               {st}
             </button>
@@ -84,7 +69,7 @@ export default function AmbulanceFleetView({ ambulances = [], onAmbulanceUpdated
       </div>
 
       {/* Fleet Cards Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '16px' }}>
         {filtered.map((amb) => {
           const isAvail = amb.status === 'AVAILABLE';
           const isEnRoute = amb.status === 'EN_ROUTE' || amb.status === 'TRANSPORTING';
@@ -92,38 +77,39 @@ export default function AmbulanceFleetView({ ambulances = [], onAmbulanceUpdated
           return (
             <div
               key={amb.vehicleId}
-              className="glass-panel"
               style={{
-                padding: '18px',
+                padding: '16px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '12px',
-                background: 'rgba(14, 18, 44, 0.7)',
-                border: '1px solid rgba(44, 52, 128, 0.5)',
-                borderLeft: isAvail ? '4px solid #ffffff' : isEnRoute ? '4px solid #2C3480' : '4px solid #f59e0b',
+                gap: '10px',
+                background: 'var(--surface-container-low)',
+                border: '1px solid var(--border-tactical)',
+                borderLeft: `4px solid ${isAvail ? 'var(--primary)' : isEnRoute ? 'var(--secondary)' : 'var(--outline)'}`,
+                borderRadius: 'var(--radius-sm)',
+                boxShadow: 'var(--shadow-tactical)',
               }}
             >
               {/* Top Row */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>
+                  <div style={{ fontFamily: 'var(--font-headline)', fontSize: '16px', fontWeight: 700, color: 'var(--on-surface-bright)' }}>
                     {amb.callsign}
                   </div>
-                  <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: '#cbd5e1' }}>
+                  <div style={{ fontSize: '11px', fontFamily: 'var(--font-telemetry)', color: 'var(--outline)' }}>
                     {amb.vehicleId} • {amb.type.replace(/_/g, ' ')}
                   </div>
                 </div>
 
                 <span
                   style={{
-                    padding: '3px 8px',
-                    borderRadius: '4px',
-                    fontSize: '11px',
+                    padding: '2px 8px',
+                    borderRadius: '3px',
+                    fontSize: '10.5px',
                     fontWeight: 700,
-                    fontFamily: 'var(--font-mono)',
-                    background: isAvail ? '#2C3480' : 'rgba(44, 52, 128, 0.3)',
-                    color: '#ffffff',
-                    border: '1px solid #ffffff',
+                    fontFamily: 'var(--font-telemetry)',
+                    background: isAvail ? 'rgba(0, 212, 255, 0.15)' : 'var(--surface-container-high)',
+                    color: isAvail ? 'var(--primary)' : 'var(--secondary)',
+                    border: `1px solid ${isAvail ? 'var(--primary)' : 'var(--secondary)'}`,
                   }}
                 >
                   {amb.status}
@@ -131,33 +117,37 @@ export default function AmbulanceFleetView({ ambulances = [], onAmbulanceUpdated
               </div>
 
               {/* Telemetry info */}
-              <div style={{ display: 'flex', gap: '16px', fontSize: '11px', color: '#cbd5e1' }}>
+              <div style={{ display: 'flex', gap: '16px', fontSize: '11.5px', fontFamily: 'var(--font-telemetry)', color: 'var(--on-surface)' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Fuel size={13} color="#ffffff" /> Fuel: {amb.fuelLevel}%
+                  <span className="material-symbols-outlined" style={{ fontSize: '14px', color: 'var(--primary)' }}>local_gas_station</span>
+                  Fuel: {amb.fuelLevel}%
                 </span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Battery size={13} color="#ffffff" /> Battery: {amb.batteryLevel}%
+                  <span className="material-symbols-outlined" style={{ fontSize: '14px', color: 'var(--primary)' }}>battery_charging_full</span>
+                  Battery: {amb.batteryLevel}%
                 </span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Navigation size={13} color="#ffffff" /> {amb.location?.speedKmh || 0} km/h
+                  <span className="material-symbols-outlined" style={{ fontSize: '14px', color: 'var(--secondary)' }}>speed</span>
+                  {amb.location?.speedKmh || 0} km/h
                 </span>
               </div>
 
               {/* Location & Incident */}
-              <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                📍 {amb.location?.address}
+              <div style={{ fontSize: '11.5px', color: 'var(--outline)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '14px', color: 'var(--secondary)' }}>pin_drop</span>
+                <span>{amb.location?.address}</span>
               </div>
 
               {amb.assignedIncidentId && (
                 <div
                   style={{
                     padding: '6px 10px',
-                    borderRadius: '6px',
-                    background: '#2C3480',
-                    border: '1px solid #ffffff',
+                    borderRadius: '4px',
+                    background: 'rgba(0, 212, 255, 0.12)',
+                    border: '1px solid var(--primary)',
                     fontSize: '11px',
-                    color: '#ffffff',
-                    fontFamily: 'var(--font-mono)',
+                    color: 'var(--primary)',
+                    fontFamily: 'var(--font-telemetry)',
                     fontWeight: 700,
                   }}
                 >
@@ -166,21 +156,21 @@ export default function AmbulanceFleetView({ ambulances = [], onAmbulanceUpdated
               )}
 
               {/* Crew Roster */}
-              <div style={{ borderTop: '1px solid rgba(44, 52, 128, 0.4)', paddingTop: '10px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#ffffff', marginBottom: '4px' }}>
+              <div style={{ borderTop: '1px solid var(--border-tactical)', paddingTop: '8px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--outline)', fontFamily: 'var(--font-telemetry)', marginBottom: '4px' }}>
                   PARAMEDIC CREW COMPLEMENT:
                 </div>
                 {amb.paramedicCrew?.map((member, i) => (
-                  <div key={i} style={{ fontSize: '11px', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#ffffff' }}>{member.name} ({member.role})</span>
-                    <span style={{ color: '#94a3b8', fontSize: '10px' }}>{member.certification}</span>
+                  <div key={i} style={{ fontSize: '11px', color: 'var(--on-surface)', display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--on-surface-bright)' }}>{member.name} ({member.role})</span>
+                    <span style={{ color: 'var(--outline)', fontSize: '10px', fontFamily: 'var(--font-telemetry)' }}>{member.certification}</span>
                   </div>
                 ))}
               </div>
 
               {/* Equipment Tags */}
               <div>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#ffffff', marginBottom: '4px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--outline)', fontFamily: 'var(--font-telemetry)', marginBottom: '4px' }}>
                   ADVANCED LIFE SUPPORT EQUIPMENT:
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
@@ -190,10 +180,11 @@ export default function AmbulanceFleetView({ ambulances = [], onAmbulanceUpdated
                       style={{
                         fontSize: '10px',
                         padding: '2px 6px',
-                        borderRadius: '4px',
-                        background: 'rgba(44, 52, 128, 0.25)',
-                        border: '1px solid rgba(44, 52, 128, 0.5)',
-                        color: '#ffffff',
+                        borderRadius: '3px',
+                        background: 'var(--surface-container-highest)',
+                        border: '1px solid var(--border-tactical)',
+                        color: 'var(--on-surface)',
+                        fontFamily: 'var(--font-telemetry)',
                       }}
                     >
                       {eq}
@@ -203,11 +194,12 @@ export default function AmbulanceFleetView({ ambulances = [], onAmbulanceUpdated
               </div>
 
               {/* Status Action Buttons */}
-              <div style={{ borderTop: '1px solid rgba(44, 52, 128, 0.4)', paddingTop: '10px', display: 'flex', gap: '6px' }}>
+              <div style={{ borderTop: '1px solid var(--border-tactical)', paddingTop: '8px', display: 'flex', gap: '6px' }}>
                 {amb.status !== 'AVAILABLE' && (
                   <button
-                    className="btn-outline"
-                    style={{ flex: 1, padding: '5px 8px', fontSize: '11px', background: '#2C3480', borderColor: '#ffffff', color: '#ffffff', fontWeight: 700 }}
+                    type="button"
+                    className="btn-hud-tactical btn-hud-primary"
+                    style={{ flex: 1, padding: '5px 8px', fontSize: '11px', justifyContent: 'center' }}
                     onClick={() => handleStatusChange(amb.vehicleId, 'AVAILABLE')}
                   >
                     Set Available
@@ -215,8 +207,9 @@ export default function AmbulanceFleetView({ ambulances = [], onAmbulanceUpdated
                 )}
                 {amb.status !== 'OUT_OF_SERVICE' && (
                   <button
-                    className="btn-outline"
-                    style={{ flex: 1, padding: '5px 8px', fontSize: '11px', borderColor: 'rgba(44, 52, 128, 0.5)', color: '#cbd5e1' }}
+                    type="button"
+                    className="btn-hud-tactical"
+                    style={{ flex: 1, padding: '5px 8px', fontSize: '11px', justifyContent: 'center' }}
                     onClick={() => handleStatusChange(amb.vehicleId, 'OUT_OF_SERVICE')}
                   >
                     Maintenance
