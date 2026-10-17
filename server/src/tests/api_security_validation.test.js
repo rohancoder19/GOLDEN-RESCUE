@@ -4,6 +4,8 @@ import http from 'http';
 import app from '../app.js';
 import { connectDB } from '../config/db.js';
 import mongoose from 'mongoose';
+import { Ambulance } from '../models/Ambulance.js';
+import { Hospital } from '../models/Hospital.js';
 
 test('API Security, Validation & Health Suite', async (t) => {
   await connectDB();
@@ -40,7 +42,9 @@ test('API Security, Validation & Health Suite', async (t) => {
   });
 
   await t.test('PATCH /api/ambulances/:id/status: rejects invalid status enum', async () => {
-    const res = await request('/api/ambulances/AMB-101/status', {
+    const amb = await Ambulance.findOne();
+    const ambId = amb?.vehicleId || 'AMB-101';
+    const res = await request(`/api/ambulances/${ambId}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status: 'INVALID_FLYING_STATUS' }),
     });
@@ -50,7 +54,9 @@ test('API Security, Validation & Health Suite', async (t) => {
   });
 
   await t.test('PATCH /api/ambulances/:id/location: rejects out-of-bounds coordinates', async () => {
-    const res = await request('/api/ambulances/AMB-101/location', {
+    const amb = await Ambulance.findOne();
+    const ambId = amb?.vehicleId || 'AMB-101';
+    const res = await request(`/api/ambulances/${ambId}/location`, {
       method: 'PATCH',
       body: JSON.stringify({ coordinates: [180.5, -290.0] }),
     });
@@ -60,7 +66,9 @@ test('API Security, Validation & Health Suite', async (t) => {
   });
 
   await t.test('PATCH /api/hospitals/:id/capacity: rejects negative available beds', async () => {
-    const res = await request('/api/hospitals/HOSP-01/capacity', {
+    const hosp = await Hospital.findOne();
+    const hospId = hosp?.hospitalId || 'HOSP-01';
+    const res = await request(`/api/hospitals/${hospId}/capacity`, {
       method: 'PATCH',
       body: JSON.stringify({ availableBeds: -5 }),
     });

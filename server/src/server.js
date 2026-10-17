@@ -7,6 +7,7 @@ import { connectDB } from './config/db.js';
 import { setupSocket } from './sockets/socketHandler.js';
 import { Ambulance } from './models/Ambulance.js';
 import { seedInitialData } from './seed/seedData.js';
+import { seedDemoAccountsIfEmpty } from './routes/auth.js';
 
 dotenv.config();
 
@@ -65,6 +66,7 @@ async function startServer() {
       console.log('[Server] 🚀 Empty database detected. Populating initial operational data...');
       await seedInitialData();
     }
+    await seedDemoAccountsIfEmpty();
   } catch (err) {
     console.warn('[Server] Seed check error:', err.message);
   }

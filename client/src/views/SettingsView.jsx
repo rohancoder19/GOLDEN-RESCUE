@@ -9,6 +9,7 @@ export default function SettingsView({
   onRefreshData,
   activeRegion = 'SAN_FRANCISCO',
   onSwitchRegion,
+  currentUser = null,
 }) {
   const [healthData, setHealthData] = useState(null);
   const [isResetting, setIsResetting] = useState(false);
@@ -330,6 +331,44 @@ export default function SettingsView({
               <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>restart_alt</span>
               <span>{isResetting ? 'RESTORING BASELINE...' : 'PURGE SIMULATIONS & RESTORE CLEAN BASELINE'}</span>
             </button>
+          </div>
+        </div>
+
+        {/* Authenticated Operator Identity */}
+        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'var(--surface-container-low)', border: '1px solid var(--border-tactical)', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ fontFamily: 'var(--font-headline)', fontSize: '15px', fontWeight: 700, color: 'var(--on-surface-bright)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--primary)' }}>badge</span>
+            <span>OPERATOR CREDENTIALS &amp; ROLE AUTHORIZATION</span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'var(--surface-container-lowest)', borderRadius: '4px', border: '1px solid var(--border-tactical)' }}>
+              <span style={{ fontSize: '12px', color: 'var(--on-surface)' }}>Active Responder:</span>
+              <span style={{ fontFamily: 'var(--font-headline)', fontSize: '12px', fontWeight: 700, color: 'var(--on-surface-bright)' }}>
+                {currentUser?.name || 'Authorized Dispatcher'}
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'var(--surface-container-lowest)', borderRadius: '4px', border: '1px solid var(--border-tactical)' }}>
+              <span style={{ fontSize: '12px', color: 'var(--on-surface)' }}>Email Identifier:</span>
+              <span style={{ fontFamily: 'var(--font-telemetry)', fontSize: '11px', color: 'var(--outline)' }}>
+                {currentUser?.email || 'dispatcher@goldenrescue.org'}
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'var(--surface-container-lowest)', borderRadius: '4px', border: '1px solid var(--border-tactical)' }}>
+              <span style={{ fontSize: '12px', color: 'var(--on-surface)' }}>Role Permission:</span>
+              <span style={{ fontFamily: 'var(--font-telemetry)', fontSize: '11px', fontWeight: 700, color: currentUser?.role === 'ADMIN' ? 'var(--secondary)' : 'var(--primary)', background: currentUser?.role === 'ADMIN' ? 'rgba(255, 189, 88, 0.15)' : 'rgba(0, 212, 255, 0.12)', border: `1px solid ${currentUser?.role === 'ADMIN' ? 'var(--secondary)' : 'var(--primary)'}`, padding: '2px 8px', borderRadius: '3px' }}>
+                {currentUser?.role || 'DISPATCHER'} ({currentUser?.badgeId || 'GR-001'})
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'var(--surface-container-lowest)', borderRadius: '4px', border: '1px solid var(--border-tactical)' }}>
+              <span style={{ fontSize: '12px', color: 'var(--on-surface)' }}>Session Protocol:</span>
+              <span style={{ fontFamily: 'var(--font-telemetry)', fontSize: '11px', fontWeight: 700, color: '#4ade80', background: 'rgba(74, 222, 128, 0.12)', border: '1px solid #4ade80', padding: '2px 8px', borderRadius: '3px' }}>
+                SECURE HTTP-ONLY COOKIE (JWT)
+              </span>
+            </div>
           </div>
         </div>
       </div>

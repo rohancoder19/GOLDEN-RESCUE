@@ -13,6 +13,8 @@ export default function TopNavbar({
   onSelectIncident,
   activeRegion = 'SAN_FRANCISCO',
   onSwitchRegion,
+  currentUser = null,
+  onLogout = null,
 }) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [muted, setMuted] = useState(getAudioMuted());
@@ -228,21 +230,55 @@ export default function TopNavbar({
           )}
         </div>
 
-        {/* Dispatch Supervisor Profile */}
-        <div className="supervisor-profile-chip">
+        {/* Dispatch Operator Profile */}
+        <div className="supervisor-profile-chip" title={`Authenticated as ${currentUser?.email || 'Dispatcher'}`}>
           <div className="avatar-wrapper">
-            <img
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces"
-              alt="Dispatch Supervisor Cmdr. S. Thompson"
-              className="avatar-img"
-            />
+            <div
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                background: currentUser?.role === 'ADMIN' ? 'rgba(255, 189, 88, 0.2)' : 'rgba(0, 212, 255, 0.2)',
+                border: `1.5px solid ${currentUser?.role === 'ADMIN' ? '#ffbd58' : '#00d4ff'}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: currentUser?.role === 'ADMIN' ? '#ffbd58' : '#00d4ff',
+                fontFamily: 'Space Grotesk, sans-serif',
+                fontSize: '12px',
+                fontWeight: 700,
+              }}
+            >
+              {currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : 'OP'}
+            </div>
             <span className="avatar-status-dot"></span>
           </div>
           <div className="supervisor-meta">
-            <span className="supervisor-name">Cmdr. S. Thompson</span>
-            <span className="supervisor-role">Dispatch Supervisor</span>
+            <span className="supervisor-name">{currentUser?.name || 'Authorized Dispatcher'}</span>
+            <span className="supervisor-role">
+              {currentUser?.role || 'DISPATCHER'} • {currentUser?.badgeId || 'GR-001'}
+            </span>
           </div>
         </div>
+
+        {/* Tactical Sign Out Button */}
+        {onLogout && (
+          <button
+            type="button"
+            className="icon-btn-tactical"
+            onClick={onLogout}
+            title="Sign Out of Golden Rescue Terminal"
+            style={{
+              color: 'var(--error, #ff4d5a)',
+              background: 'rgba(255, 77, 90, 0.08)',
+              border: '1px solid rgba(255, 77, 90, 0.3)',
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+              logout
+            </span>
+          </button>
+        )}
       </div>
     </header>
   );

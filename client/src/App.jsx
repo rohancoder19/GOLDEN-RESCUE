@@ -11,6 +11,7 @@ import AnalyticsView from './views/AnalyticsView';
 import SettingsView from './views/SettingsView';
 import IncidentDetailModal from './components/IncidentDetailModal';
 import NewIncidentModal from './components/NewIncidentModal';
+import AuthView from './views/AuthView';
 import { api } from './services/api';
 import { initSocket } from './services/socket';
 import { playAlertSiren, playTelemetryChirp } from './services/audio';
@@ -44,6 +45,8 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeRegion, setActiveRegion] = useState('SAN_FRANCISCO');
   const [regionCenter, setRegionCenter] = useState([37.7749, -122.4194]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
 
   // Fetch initial datasets with strict deduplication
   const fetchAllData = async () => {
@@ -84,7 +87,26 @@ export default function App() {
   };
 
   useEffect(() => {
-    fetchAllData();
+    // 1. Verify existing session cookie on app mount
+    const verifySession = async () => {
+      try {
+        const res = await api.getMe();
+        if (res.success && res.user) {
+          setCurrentUser(res.user);
+          await fetchAllData();
+        } else {
+          setCurrentUser(null);
+          setIsLoading(false);
+        }
+      } catch {
+        setCurrentUser(null);
+        setIsLoading(false);
+      } finally {
+        setIsAuthChecking(false);
+      }
+    };
+
+    verifySession();
 
     // Socket.IO real-time event listeners with deduplication
     const socket = initSocket();
@@ -202,6 +224,18 @@ export default function App() {
     }
   };
 
+  const handleLogout = async () => {
+    if (!window.confirm('Are you sure you want to sign out of the dispatch terminal?')) return;
+    try {
+      await api.logout();
+    } catch (err) {
+      console.warn('Logout notice:', err.message);
+    } finally {
+      playTelemetryChirp();
+      setCurrentUser(null);
+    }
+  };
+
   const handleIncidentUpdated = (updated) => {
     setIncidents((prev) =>
       deduplicateBy(
@@ -256,6 +290,48 @@ export default function App() {
     'hospitalId'
   );
 
+  // Loading state while verifying secure session
+  if (isAuthChecking) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          width: '100vw',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#050e1c',
+          color: '#00d4ff',
+          fontFamily: 'Space Grotesk, sans-serif',
+          gap: '16px',
+        }}
+      >
+        <span
+          className="material-symbols-outlined"
+          style={{ fontSize: '42px', animation: 'spin 1.2s linear infinite' }}
+        >
+          sync
+        </span>
+        <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', letterSpacing: '0.1em' }}>
+          INITIALIZING SECURE DISPATCH TERMINAL...
+        </div>
+      </div>
+    );
+  }
+
+  // Authentication Gate: Render Login/Registration if unauthenticated
+  if (!currentUser) {
+    return (
+      <AuthView
+        onAuthSuccess={(user) => {
+          setCurrentUser(user);
+          fetchAllData();
+        }}
+      />
+    );
+  }
+
   return (
     <div className="app-container">
       {/* Sidebar Navigation */}
@@ -286,6 +362,8 @@ export default function App() {
           onSelectIncident={(inc) => setSelectedIncident(inc)}
           activeRegion={activeRegion}
           onSwitchRegion={handleSwitchRegion}
+          currentUser={currentUser}
+          onLogout={handleLogout}
         />
 
         {/* View Switcher */}
@@ -379,6 +457,7 @@ export default function App() {
             onRefreshData={fetchAllData}
             activeRegion={activeRegion}
             onSwitchRegion={handleSwitchRegion}
+            currentUser={currentUser}
           />
         )}
       </div>

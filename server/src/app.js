@@ -6,6 +6,9 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
+import cookieParser from 'cookie-parser';
+
+import authRouter from './routes/auth.js';
 import incidentsRouter from './routes/incidents.js';
 import ambulancesRouter from './routes/ambulances.js';
 import hospitalsRouter from './routes/hospitals.js';
@@ -13,6 +16,7 @@ import aiRouter from './routes/ai.js';
 import analyticsRouter from './routes/analytics.js';
 import auditRouter from './routes/audit.js';
 import simulationRouter from './routes/simulation.js';
+import { authenticateToken } from './middleware/auth.js';
 import { model } from './config/gemini.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -29,16 +33,25 @@ app.use((req, res, next) => {
   next();
 });
 
-// CORS Configuration
-const allowedOrigin = process.env.CLIENT_URL || '*';
+// CORS Configuration with Credentials Support
+const allowedOrigin = process.env.CLIENT_URL || 'http://localhost:5173';
 app.use(cors({
-  origin: allowedOrigin === '*' ? '*' : [allowedOrigin, 'http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: (origin, callback) => {
+    // Allow non-browser requests or matching origins
+    if (!origin || origin === allowedOrigin || origin === 'http://localhost:5173' || origin === 'http://127.0.0.1:5173') {
+      return callback(null, true);
+    }
+    return callback(null, true); // Dev flexible fallback
+  },
+  credentials: true,
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
+app.use(cookieParser());
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+app.use(authenticateToken);
 
 if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
@@ -63,6 +76,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Mount API Routes
+app.use('/api/auth', authRouter);
 app.use('/api/incidents', incidentsRouter);
 app.use('/api/ambulances', ambulancesRouter);
 app.use('/api/hospitals', hospitalsRouter);

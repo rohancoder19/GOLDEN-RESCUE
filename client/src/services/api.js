@@ -7,6 +7,7 @@ const BASE_URL = '/api';
 async function request(endpoint, options = {}) {
   const url = `${BASE_URL}${endpoint}`;
   const config = {
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -28,6 +29,23 @@ async function request(endpoint, options = {}) {
 }
 
 export const api = {
+  // Authentication
+  login: (payload) =>
+    request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  register: (payload) =>
+    request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  getMe: () => request('/auth/me'),
+  logout: () =>
+    request('/auth/logout', {
+      method: 'POST',
+    }),
+
   // Incidents
   getIncidents: (params = {}) => {
     const query = new URLSearchParams(params).toString();
