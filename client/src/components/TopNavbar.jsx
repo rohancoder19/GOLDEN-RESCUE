@@ -11,6 +11,8 @@ export default function TopNavbar({
   onOpenNewIncident,
   incidents = [],
   onSelectIncident,
+  activeRegion = 'SAN_FRANCISCO',
+  onSwitchRegion,
 }) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [muted, setMuted] = useState(getAudioMuted());
@@ -27,12 +29,16 @@ export default function TopNavbar({
     if (!next) playTelemetryChirp();
   };
 
+  const isIndia = activeRegion === 'DELHI_NCR';
+
   const criticalCount = incidents.filter(
     (i) => i.severity === 'CRITICAL' && (i.status === 'REPORTED' || i.status === 'TRIAGED' || i.status === 'ON_SCENE')
   ).length;
 
   const zuluTimeStr = `${currentTime.getUTCHours().toString().padStart(2, '0')}:${currentTime.getUTCMinutes().toString().padStart(2, '0')}:${currentTime.getUTCSeconds().toString().padStart(2, '0')} UTC`;
-  const localTimeStr = currentTime.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' EST';
+  const localTimeStr = isIndia
+    ? currentTime.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' IST'
+    : currentTime.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' PST';
 
   return (
     <header className="top-navbar">
@@ -43,7 +49,7 @@ export default function TopNavbar({
           <input
             type="text"
             className="search-input"
-            placeholder="Search active incidents, triage tags, units..."
+            placeholder={isIndia ? "Search 108/112 incidents, AIIMS, Safdarjung..." : "Search active incidents, triage tags, units..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -63,12 +69,45 @@ export default function TopNavbar({
           </div>
           <div className="clock-divider"></div>
           <div className="clock-item">
-            <span className="clock-label">LOCAL (HQ)</span>
-            <span className="clock-val" style={{ color: 'var(--secondary)' }}>
+            <span className="clock-label">{isIndia ? 'LOCAL (DELHI IST)' : 'LOCAL (SF HQ)'}</span>
+            <span className="clock-val" style={{ color: isIndia ? 'var(--secondary)' : 'var(--primary)' }}>
               {localTimeStr}
             </span>
           </div>
         </div>
+
+        {/* Regional Sector Switcher: INDIA 108/112 vs USA 911 */}
+        {onSwitchRegion && (
+          <button
+            type="button"
+            className="live-badge-pill"
+            onClick={() => {
+              playTelemetryChirp();
+              onSwitchRegion(isIndia ? 'SAN_FRANCISCO' : 'DELHI_NCR');
+            }}
+            title="Click to toggle Regional Sector (India 108/112 vs US 911)"
+            style={{
+              cursor: 'pointer',
+              background: isIndia ? 'rgba(255, 189, 88, 0.12)' : 'rgba(0, 212, 255, 0.12)',
+              border: `1px solid ${isIndia ? 'var(--secondary)' : 'var(--primary)'}`,
+              gap: '6px',
+            }}
+          >
+            <span style={{ fontSize: '13px' }}>{isIndia ? '🇮🇳' : '🇺🇸'}</span>
+            <span
+              style={{
+                fontFamily: 'var(--font-telemetry)',
+                fontSize: '11px',
+                fontWeight: 700,
+                color: isIndia ? 'var(--secondary)' : 'var(--primary)',
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+              }}
+            >
+              {isIndia ? 'INDIA: DELHI (108/112)' : 'USA: SF BAY (911)'}
+            </span>
+          </button>
+        )}
 
         {/* Live Simulation / Ready Badge with Ping Dot */}
         <button

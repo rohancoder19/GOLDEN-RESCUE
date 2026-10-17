@@ -109,6 +109,16 @@ export const api = {
     request('/simulation/reset', {
       method: 'POST',
     }),
+  switchRegion: (region) =>
+    request('/simulation/switch-region', {
+      method: 'POST',
+      body: JSON.stringify({ region }),
+    }),
+  scrapeIndiaHospitals: (city = 'New Delhi', limit = 6) =>
+    request('/simulation/scrape-india', {
+      method: 'POST',
+      body: JSON.stringify({ city, limit }),
+    }),
 
   // Health
   getHealth: () => request('/health'),

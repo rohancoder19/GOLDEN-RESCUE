@@ -42,6 +42,8 @@ export default function App() {
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [activeRegion, setActiveRegion] = useState('SAN_FRANCISCO');
+  const [regionCenter, setRegionCenter] = useState([37.7749, -122.4194]);
 
   // Fetch initial datasets with strict deduplication
   const fetchAllData = async () => {
@@ -61,6 +63,19 @@ export default function App() {
       setHotspots(hotRes.hotspots || []);
       setAnalytics(anaRes);
       setAuditLogs(audRes.logs || []);
+
+      // Auto-detect regional sector from active hospital coordinates
+      const firstHosp = hospRes.hospitals?.[0];
+      if (firstHosp?.location?.coordinates) {
+        const [lat, lng] = firstHosp.location.coordinates;
+        if (lat > 8 && lat < 36 && lng > 68 && lng < 98) {
+          setActiveRegion('DELHI_NCR');
+          setRegionCenter([28.6139, 77.2090]);
+        } else {
+          setActiveRegion('SAN_FRANCISCO');
+          setRegionCenter([37.7749, -122.4194]);
+        }
+      }
     } catch (err) {
       console.warn('Initial data load warning:', err.message);
     } finally {
@@ -142,6 +157,14 @@ export default function App() {
       fetchAllData();
     });
 
+    socket.on('region:changed', (data) => {
+      if (data?.region) {
+        setActiveRegion(data.region);
+        if (data.center) setRegionCenter(data.center);
+        fetchAllData();
+      }
+    });
+
     return () => {
       socket.off('incident:created');
       socket.off('incident:updated');
@@ -150,6 +173,7 @@ export default function App() {
       socket.off('ambulance:status_change');
       socket.off('hospital:status_change');
       socket.off('system:reset');
+      socket.off('region:changed');
     };
   }, []);
 
@@ -161,6 +185,20 @@ export default function App() {
     } catch (err) {
       console.warn('Simulation toggle error:', err);
       setIsDemoMode(!isDemoMode);
+    }
+  };
+
+  const handleSwitchRegion = async (region) => {
+    try {
+      setIsLoading(true);
+      const res = await api.switchRegion(region);
+      setActiveRegion(res.region || region);
+      if (res.center) setRegionCenter(res.center);
+      await fetchAllData();
+    } catch (err) {
+      console.error('Failed to switch region:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -246,6 +284,8 @@ export default function App() {
           onOpenNewIncident={() => setIsNewIncidentOpen(true)}
           incidents={visibleIncidents}
           onSelectIncident={(inc) => setSelectedIncident(inc)}
+          activeRegion={activeRegion}
+          onSwitchRegion={handleSwitchRegion}
         />
 
         {/* View Switcher */}
@@ -337,6 +377,8 @@ export default function App() {
             toggleDemoMode={toggleDemoMode}
             auditLogs={auditLogs}
             onRefreshData={fetchAllData}
+            activeRegion={activeRegion}
+            onSwitchRegion={handleSwitchRegion}
           />
         )}
       </div>

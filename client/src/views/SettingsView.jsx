@@ -7,15 +7,62 @@ export default function SettingsView({
   toggleDemoMode,
   auditLogs = [],
   onRefreshData,
+  activeRegion = 'SAN_FRANCISCO',
+  onSwitchRegion,
 }) {
   const [healthData, setHealthData] = useState(null);
   const [isResetting, setIsResetting] = useState(false);
+  const [isSwitchingRegion, setIsSwitchingRegion] = useState(false);
+  const [isScraping, setIsScraping] = useState(false);
+  const [scrapeCity, setScrapeCity] = useState('New Delhi');
+  const [scrapeLimit, setScrapeLimit] = useState(6);
+  const [scrapeFeedback, setScrapeFeedback] = useState(null);
 
   useEffect(() => {
     api.getHealth()
       .then(setHealthData)
       .catch((err) => console.warn('Health check error:', err));
   }, []);
+
+  const handleRegionSwitch = async (region) => {
+    setIsSwitchingRegion(true);
+    setScrapeFeedback(null);
+    try {
+      if (onSwitchRegion) {
+        await onSwitchRegion(region);
+      } else {
+        await api.switchRegion(region);
+        if (onRefreshData) onRefreshData();
+      }
+      playTelemetryChirp();
+    } catch (err) {
+      alert(`Error switching operational theater: ${err.message}`);
+    } finally {
+      setIsSwitchingRegion(false);
+    }
+  };
+
+  const handleScrapeIndiaHospitals = async () => {
+    setIsScraping(true);
+    setScrapeFeedback(null);
+    try {
+      const res = await api.scrapeIndiaHospitals(scrapeCity, Number(scrapeLimit));
+      playTelemetryChirp();
+      setScrapeFeedback({
+        type: 'success',
+        message: `Successfully scraped & ingested ${res.count} verified hospitals in ${res.city} via ${res.source}.`,
+        hospitals: res.hospitals,
+      });
+      if (onRefreshData) onRefreshData();
+    } catch (err) {
+      setScrapeFeedback({
+        type: 'error',
+        message: `Scrape error: ${err.message}`,
+      });
+    } finally {
+      setIsScraping(false);
+    }
+  };
 
   const handleResetBaseline = async () => {
     if (!window.confirm('Reset database to clean operational baseline?')) return;
@@ -42,6 +89,8 @@ export default function SettingsView({
       alert(`Injection error: ${err.message}`);
     }
   };
+
+  const isIndia = activeRegion === 'DELHI_NCR';
 
   return (
     <div className="workspace-container">
@@ -71,9 +120,152 @@ export default function SettingsView({
             Database connectivity, operational telemetry parameters, and operator incident audit logging
           </p>
         </div>
+
+        {/* Current Active Sector Badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '11px', fontFamily: 'var(--font-telemetry)', color: 'var(--outline)' }}>
+            ACTIVE THEATER:
+          </span>
+          <span
+            style={{
+              fontFamily: 'var(--font-telemetry)',
+              fontSize: '11px',
+              fontWeight: 700,
+              padding: '4px 10px',
+              borderRadius: '4px',
+              background: isIndia ? 'rgba(255, 189, 88, 0.15)' : 'rgba(0, 212, 255, 0.15)',
+              border: `1px solid ${isIndia ? 'var(--secondary)' : 'var(--primary)'}`,
+              color: isIndia ? 'var(--secondary)' : 'var(--primary)',
+            }}
+          >
+            {isIndia ? '🇮🇳 INDIA: DELHI NCR (108/112)' : '🇺🇸 USA: SF BAY AREA (911)'}
+          </span>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
+        {/* Operational Theater Selector & Live Scraper */}
+        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'var(--surface-container-low)', border: '1px solid var(--border-tactical)', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ fontFamily: 'var(--font-headline)', fontSize: '15px', fontWeight: 700, color: 'var(--on-surface-bright)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px', color: isIndia ? 'var(--secondary)' : 'var(--primary)' }}>
+              public
+            </span>
+            <span>OPERATIONAL SECTORS &amp; LIVE DATA SCRAPING</span>
+          </div>
+
+          <p style={{ fontSize: '12px', color: 'var(--outline)', lineHeight: '1.4' }}>
+            Switch platform operations between Indian Emergency Services (108/112, AIIMS, Safdarjung, MoRTH blackspots) and US EMS (911, SF General, UCSF).
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <button
+              type="button"
+              className={isIndia ? 'btn-command-gold' : 'btn-command-secondary'}
+              onClick={() => handleRegionSwitch('DELHI_NCR')}
+              disabled={isSwitchingRegion}
+              style={{ padding: '10px 8px', fontSize: '12px', justifyContent: 'center' }}
+            >
+              <span>🇮🇳</span>
+              <span>{isSwitchingRegion && isIndia ? 'ACTIVATING...' : 'INDIA: DELHI (108/112)'}</span>
+            </button>
+
+            <button
+              type="button"
+              className={!isIndia ? 'btn-command-primary' : 'btn-command-secondary'}
+              onClick={() => handleRegionSwitch('SAN_FRANCISCO')}
+              disabled={isSwitchingRegion}
+              style={{ padding: '10px 8px', fontSize: '12px', justifyContent: 'center' }}
+            >
+              <span>🇺🇸</span>
+              <span>{isSwitchingRegion && !isIndia ? 'ACTIVATING...' : 'USA: SF BAY (911)'}</span>
+            </button>
+          </div>
+
+          {/* Live OpenStreetMap Indian Scraper Section */}
+          <div style={{ marginTop: '8px', padding: '12px', background: 'var(--surface-container-lowest)', borderRadius: '6px', border: '1px solid var(--border-tactical)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontFamily: 'var(--font-headline)', fontSize: '12.5px', fontWeight: 600, color: 'var(--on-surface-bright)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '16px', color: 'var(--primary)' }}>satellite_alt</span>
+                <span>OpenStreetMap Live Emergency Scraper (India)</span>
+              </span>
+              <span style={{ fontSize: '10px', fontFamily: 'var(--font-telemetry)', color: 'var(--primary)', background: 'rgba(0, 212, 255, 0.1)', padding: '2px 6px', borderRadius: '3px' }}>
+                LIVE OSM API
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <select
+                value={scrapeCity}
+                onChange={(e) => setScrapeCity(e.target.value)}
+                style={{
+                  flex: 1,
+                  background: 'var(--surface-container-low)',
+                  color: 'var(--on-surface-bright)',
+                  border: '1px solid var(--border-tactical)',
+                  borderRadius: '4px',
+                  padding: '6px 10px',
+                  fontSize: '12px',
+                  fontFamily: 'var(--font-body)',
+                }}
+              >
+                <option value="New Delhi">New Delhi (National Capital)</option>
+                <option value="Mumbai">Mumbai (Maharashtra Grid)</option>
+                <option value="Bengaluru">Bengaluru (Karnataka Grid)</option>
+                <option value="Kolkata">Kolkata (West Bengal Hub)</option>
+                <option value="Chennai">Chennai (Tamil Nadu Hub)</option>
+                <option value="Hyderabad">Hyderabad (Telangana Hub)</option>
+              </select>
+
+              <select
+                value={scrapeLimit}
+                onChange={(e) => setScrapeLimit(Number(e.target.value))}
+                style={{
+                  width: '90px',
+                  background: 'var(--surface-container-low)',
+                  color: 'var(--on-surface-bright)',
+                  border: '1px solid var(--border-tactical)',
+                  borderRadius: '4px',
+                  padding: '6px 10px',
+                  fontSize: '12px',
+                  fontFamily: 'var(--font-body)',
+                }}
+              >
+                <option value={4}>4 Nodes</option>
+                <option value={6}>6 Nodes</option>
+                <option value={8}>8 Nodes</option>
+                <option value={10}>10 Nodes</option>
+              </select>
+            </div>
+
+            <button
+              type="button"
+              className="btn-command-primary"
+              onClick={handleScrapeIndiaHospitals}
+              disabled={isScraping}
+              style={{ fontSize: '11px', padding: '8px 12px', justifyContent: 'center' }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>download</span>
+              <span>{isScraping ? `SCRAPING OSM DATA FOR ${scrapeCity.toUpperCase()}...` : `SCRAPE & INGEST ${scrapeCity.toUpperCase()} HOSPITALS`}</span>
+            </button>
+
+            {scrapeFeedback && (
+              <div
+                style={{
+                  padding: '8px 10px',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  background: scrapeFeedback.type === 'success' ? 'rgba(74, 222, 128, 0.1)' : 'rgba(255, 77, 90, 0.1)',
+                  border: `1px solid ${scrapeFeedback.type === 'success' ? '#4ade80' : 'var(--error)'}`,
+                  color: scrapeFeedback.type === 'success' ? '#4ade80' : 'var(--error)',
+                  fontFamily: 'var(--font-telemetry)',
+                }}
+              >
+                {scrapeFeedback.message}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* System Health */}
         <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'var(--surface-container-low)', border: '1px solid var(--border-tactical)', borderRadius: 'var(--radius-md)' }}>
           <div style={{ fontFamily: 'var(--font-headline)', fontSize: '15px', fontWeight: 700, color: 'var(--on-surface-bright)', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -102,6 +294,13 @@ export default function SettingsView({
                 {healthData?.connections?.gemini || 'ONLINE / AUTHENTICATED'}
               </span>
             </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'var(--surface-container-lowest)', borderRadius: '4px', border: '1px solid var(--border-tactical)' }}>
+              <span style={{ fontSize: '12px', color: 'var(--on-surface)' }}>OpenStreetMap Nominatim:</span>
+              <span style={{ fontFamily: 'var(--font-telemetry)', fontSize: '11px', fontWeight: 700, color: '#4ade80', background: 'rgba(74, 222, 128, 0.12)', border: '1px solid #4ade80', padding: '2px 8px', borderRadius: '3px' }}>
+                ONLINE / GIS READY
+              </span>
+            </div>
           </div>
         </div>
 
@@ -119,7 +318,7 @@ export default function SettingsView({
               onClick={handleInjectSimIncident}
             >
               <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>bolt</span>
-              <span>INJECT SYNTHETIC EMERGENCY DISPATCH</span>
+              <span>{isIndia ? 'INJECT SYNTHETIC 108/112 EMERGENCY' : 'INJECT SYNTHETIC EMERGENCY DISPATCH'}</span>
             </button>
 
             <button

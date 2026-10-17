@@ -3,6 +3,7 @@ import { generateAiContent } from '../config/gemini.js';
 import { Ambulance } from '../models/Ambulance.js';
 import { Hospital } from '../models/Hospital.js';
 import { runEmergencyAiPipeline } from '../ai/pipeline.js';
+import { INDIAN_REGIONS } from '../scrapers/indiaEmergencyScraper.js';
 
 const router = express.Router();
 
@@ -62,52 +63,69 @@ JSON schema required:
 /**
  * GET /api/ai/hotspots - Predictive Accident Hotspots based on spatial telemetry models
  */
-router.get('/hotspots', (req, res) => {
-  const hotspots = [
-    {
-      id: 'HOTSPOT-01',
-      name: 'Central Expressway & 4th Ave Interchange',
-      coordinates: [37.7810, -122.4090],
-      radiusMeters: 650,
-      riskLevel: 'HIGH_RISK',
-      historicalIncidentsMonth: 28,
-      primaryFactors: ['High speed merging corridor', 'Heavy evening congestion', 'Limited shoulder width'],
-      recommendedPrePositionStation: 'Metro Station 1 (Guardian-Alpha)',
-      liveWeatherRiskFactor: 1.25,
-      isPrediction: true,
-    },
-    {
-      id: 'HOTSPOT-02',
-      name: 'Harbor Blvd & Industrial Causeway',
-      coordinates: [37.7650, -122.3950],
-      radiusMeters: 800,
-      riskLevel: 'CRITICAL_RISK',
-      historicalIncidentsMonth: 34,
-      primaryFactors: ['Heavy freight transport traffic', 'Chemical transport route', 'Sharp blind curve'],
-      recommendedPrePositionStation: 'Industrial Sector Bay (Rescue-Titan)',
-      liveWeatherRiskFactor: 1.4,
-      isPrediction: true,
-    },
-    {
-      id: 'HOTSPOT-03',
-      name: 'Westside Tech Corridor & Grand Ave',
-      coordinates: [37.7920, -122.4280],
-      radiusMeters: 500,
-      riskLevel: 'MODERATE_RISK',
-      historicalIncidentsMonth: 14,
-      primaryFactors: ['Pedestrian & micromobility density', 'Protected bike lane intersection conflicts'],
-      recommendedPrePositionStation: 'Westside Station 4 (Life-Echo)',
-      liveWeatherRiskFactor: 1.05,
-      isPrediction: true,
-    },
-  ];
+router.get('/hotspots', async (req, res) => {
+  try {
+    const sampleHosp = await Hospital.findOne();
+    const isIndia = Boolean(
+      sampleHosp?.location?.coordinates &&
+      sampleHosp.location.coordinates[0] > 8 &&
+      sampleHosp.location.coordinates[0] < 36 &&
+      sampleHosp.location.coordinates[1] > 68
+    );
 
-  res.json({
-    success: true,
-    model: 'Spatial-Temporal Bayesian Accident Predictive Model v4.2',
-    lastCalibration: new Date(),
-    hotspots,
-  });
+    const sfHotspots = [
+      {
+        id: 'HOTSPOT-01',
+        name: 'Central Expressway & 4th Ave Interchange',
+        coordinates: [37.7810, -122.4090],
+        radiusMeters: 650,
+        riskLevel: 'HIGH_RISK',
+        historicalIncidentsMonth: 28,
+        primaryFactors: ['High speed merging corridor', 'Heavy evening congestion', 'Limited shoulder width'],
+        recommendedPrePositionStation: 'Metro Station 1 (Guardian-Alpha)',
+        liveWeatherRiskFactor: 1.25,
+        isPrediction: true,
+      },
+      {
+        id: 'HOTSPOT-02',
+        name: 'Harbor Blvd & Industrial Causeway',
+        coordinates: [37.7650, -122.3950],
+        radiusMeters: 800,
+        riskLevel: 'CRITICAL_RISK',
+        historicalIncidentsMonth: 34,
+        primaryFactors: ['Heavy freight transport traffic', 'Chemical transport route', 'Sharp blind curve'],
+        recommendedPrePositionStation: 'Industrial Sector Bay (Rescue-Titan)',
+        liveWeatherRiskFactor: 1.4,
+        isPrediction: true,
+      },
+      {
+        id: 'HOTSPOT-03',
+        name: 'Westside Tech Corridor & Grand Ave',
+        coordinates: [37.7920, -122.4280],
+        radiusMeters: 500,
+        riskLevel: 'MODERATE_RISK',
+        historicalIncidentsMonth: 14,
+        primaryFactors: ['Pedestrian & micromobility density', 'Protected bike lane intersection conflicts'],
+        recommendedPrePositionStation: 'Westside Station 4 (Life-Echo)',
+        liveWeatherRiskFactor: 1.05,
+        isPrediction: true,
+      },
+    ];
+
+    const hotspots = isIndia ? INDIAN_REGIONS.DELHI_NCR.hotspots : sfHotspots;
+
+    res.json({
+      success: true,
+      region: isIndia ? 'DELHI_NCR' : 'SAN_FRANCISCO',
+      model: isIndia
+        ? 'MoRTH National Highway & Urban Corridor Accident Blackspot Model v3.1'
+        : 'Spatial-Temporal Bayesian Accident Predictive Model v4.2',
+      lastCalibration: new Date(),
+      hotspots,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 /**

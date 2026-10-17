@@ -111,9 +111,25 @@ export default function EmergencyMap({
   selectedIncident = null,
   onSelectIncident,
   height = '100%',
+  center = null,
   layers = { incidents: true, fleet: true, hospitals: true, hotspots: true, routes: true },
 }) {
-  const defaultCenter = [37.7749, -122.4194]; // San Francisco Core
+  // Dynamically resolve regional sector center (India vs San Francisco)
+  const detectSectorCenter = () => {
+    if (center && Array.isArray(center) && center.length === 2 && !isNaN(center[0])) {
+      return center;
+    }
+    const sample =
+      hospitals[0]?.location?.coordinates ||
+      incidents[0]?.location?.coordinates ||
+      ambulances[0]?.location?.coordinates;
+    if (sample && sample[0] > 8 && sample[0] < 36 && sample[1] > 68 && sample[1] < 98) {
+      return [28.6139, 77.2090]; // National Capital Region (Delhi NCR)
+    }
+    return [37.7749, -122.4194]; // San Francisco Core
+  };
+
+  const defaultCenter = detectSectorCenter();
   const rawCenter = selectedIncident?.location?.coordinates || defaultCenter;
   const mapCenter = Array.isArray(rawCenter) && rawCenter.length === 2 && !isNaN(rawCenter[0]) && !isNaN(rawCenter[1])
     ? rawCenter
